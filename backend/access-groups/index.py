@@ -21,8 +21,8 @@ def get_user_by_session(session_token: str) -> Optional[Dict]:
     
     cur.execute('''
         SELECT u.id, u.username, u.role_id
-        FROM users u
-        INNER JOIN user_sessions s ON s.user_id = u.id
+        FROM t_p66738329_webapp_functionality.users u
+        INNER JOIN t_p66738329_webapp_functionality.user_sessions s ON s.user_id = u.id
         WHERE s.session_token = %s AND s.expires_at > NOW()
     ''', (session_token,))
     
@@ -37,7 +37,7 @@ def check_permission(user_id: int, permission_code: str) -> bool:
     cur = conn.cursor()
     
     cur.execute('''
-        SELECT u.role_id, u.department_id FROM users u WHERE u.id = %s
+        SELECT u.role_id, u.department_id FROM t_p66738329_webapp_functionality.users u WHERE u.id = %s
     ''', (user_id,))
     
     user = cur.fetchone()
@@ -51,7 +51,7 @@ def check_permission(user_id: int, permission_code: str) -> bool:
     
     if department_id:
         cur.execute('''
-            SELECT d.access_group_id FROM departments d WHERE d.id = %s
+            SELECT d.access_group_id FROM t_p66738329_webapp_functionality.departments d WHERE d.id = %s
         ''', (department_id,))
         dept = cur.fetchone()
         dept_access_group_id = dept['access_group_id'] if dept else None
@@ -72,8 +72,8 @@ def check_permission(user_id: int, permission_code: str) -> bool:
     placeholders = ','.join(['%s'] * len(access_group_ids))
     cur.execute(f'''
         SELECT COUNT(*) as count
-        FROM permissions p
-        INNER JOIN access_group_permissions agp ON agp.permission_id = p.id
+        FROM t_p66738329_webapp_functionality.permissions p
+        INNER JOIN t_p66738329_webapp_functionality.access_group_permissions agp ON agp.permission_id = p.id
         WHERE agp.access_group_id IN ({placeholders}) AND p.code = %s
     ''', (*access_group_ids, permission_code))
     
@@ -146,7 +146,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 if access_group_id:
                     cur.execute('''
                         SELECT ag.id, ag.group_name as name, ag.description, ag.is_system, ag.created_at
-                        FROM access_groups ag
+                        FROM t_p66738329_webapp_functionality.access_groups ag
                         WHERE ag.id = %s
                     ''', (access_group_id,))
                     
@@ -167,8 +167,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     # Get permissions for this access group
                     cur.execute('''
                         SELECT p.id, p.code, p.name, p.description, p.category
-                        FROM permissions p
-                        INNER JOIN access_group_permissions agp ON agp.permission_id = p.id
+                        FROM t_p66738329_webapp_functionality.permissions p
+                        INNER JOIN t_p66738329_webapp_functionality.access_group_permissions agp ON agp.permission_id = p.id
                         WHERE agp.access_group_id = %s
                         ORDER BY p.category, p.code
                     ''', (access_group_id,))
@@ -189,9 +189,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     SELECT ag.id, ag.group_name as name, ag.description, ag.is_system, ag.created_at,
                            COUNT(DISTINCT d.id) as departments_count,
                            COUNT(DISTINCT u.id) as users_count
-                    FROM access_groups ag
-                    LEFT JOIN departments d ON d.access_group_id = ag.id
-                    LEFT JOIN users u ON u.department_id = d.id
+                    FROM t_p66738329_webapp_functionality.access_groups ag
+                    LEFT JOIN t_p66738329_webapp_functionality.departments d ON d.access_group_id = ag.id
+                    LEFT JOIN t_p66738329_webapp_functionality.users u ON u.department_id = d.id
                     GROUP BY ag.id, ag.group_name, ag.description, ag.is_system, ag.created_at
                     ORDER BY ag.group_name
                 ''')
@@ -221,7 +221,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cur.execute('''
                     SELECT id, code, name, description, category
-                    FROM permissions
+                    FROM t_p66738329_webapp_functionality.permissions
                     ORDER BY category, code
                 ''')
                 
@@ -269,8 +269,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cur.execute('''
                     SELECT p.id, p.code, p.name, p.category
-                    FROM permissions p
-                    INNER JOIN access_group_permissions agp ON agp.permission_id = p.id
+                    FROM t_p66738329_webapp_functionality.permissions p
+                    INNER JOIN t_p66738329_webapp_functionality.access_group_permissions agp ON agp.permission_id = p.id
                     WHERE agp.access_group_id = %s
                     ORDER BY p.category, p.code
                 ''', (access_group_id,))
@@ -312,7 +312,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur = conn.cursor()
             
             cur.execute('''
-                INSERT INTO access_groups (group_name, description, is_system)
+                INSERT INTO t_p66738329_webapp_functionality.access_groups (group_name, description, is_system)
                 VALUES (%s, %s, FALSE)
                 RETURNING id, group_name as name, description, is_system, created_at
             ''', (group_name, description))
@@ -321,7 +321,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             for permission_id in permission_ids:
                 cur.execute('''
-                    INSERT INTO access_group_permissions (access_group_id, permission_id)
+                    INSERT INTO t_p66738329_webapp_functionality.access_group_permissions (access_group_id, permission_id)
                     VALUES (%s, %s)
                 ''', (access_group['id'], permission_id))
             
@@ -329,7 +329,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user_agent = headers.get('user-agent', 'unknown')
             
             cur.execute('''
-                INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id,
+                INSERT INTO t_p66738329_webapp_functionality.audit_log (user_id, username, action_type, entity_type, entity_id,
                                        description, ip_address, user_agent)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ''', (current_user['id'], current_user['username'], 'access_groups.create', 'access_group',
@@ -372,7 +372,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             conn = get_db_connection()
             cur = conn.cursor()
             
-            cur.execute('SELECT is_system FROM access_groups WHERE id = %s', (access_group_id,))
+            cur.execute('SELECT is_system FROM t_p66738329_webapp_functionality.access_groups WHERE id = %s', (access_group_id,))
             result = cur.fetchone()
             
             if not result:
@@ -396,7 +396,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute('''
-                UPDATE access_groups
+                UPDATE t_p66738329_webapp_functionality.access_groups
                 SET group_name = %s, description = %s
                 WHERE id = %s
                 RETURNING id, group_name as name, description, is_system, created_at
@@ -405,11 +405,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             access_group = dict(cur.fetchone())
             
             if permission_ids is not None:
-                cur.execute('DELETE FROM access_group_permissions WHERE access_group_id = %s', (access_group_id,))
+                cur.execute('DELETE FROM t_p66738329_webapp_functionality.access_group_permissions WHERE access_group_id = %s', (access_group_id,))
                 
                 for permission_id in permission_ids:
                     cur.execute('''
-                        INSERT INTO access_group_permissions (access_group_id, permission_id)
+                        INSERT INTO t_p66738329_webapp_functionality.access_group_permissions (access_group_id, permission_id)
                         VALUES (%s, %s)
                     ''', (access_group_id, permission_id))
             
@@ -417,7 +417,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user_agent = headers.get('user-agent', 'unknown')
             
             cur.execute('''
-                INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id,
+                INSERT INTO t_p66738329_webapp_functionality.audit_log (user_id, username, action_type, entity_type, entity_id,
                                        description, ip_address, user_agent)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ''', (current_user['id'], current_user['username'], 'access_groups.edit', 'access_group',
