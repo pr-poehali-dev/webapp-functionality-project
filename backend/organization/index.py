@@ -13,7 +13,7 @@ from psycopg2.extras import RealDictCursor
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor, options='-c search_path=t_p66738329_webapp_functionality')
 
 def get_user_by_session(session_token: str):
     conn = get_db_connection()
