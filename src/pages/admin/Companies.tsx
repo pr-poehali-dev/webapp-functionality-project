@@ -79,13 +79,12 @@ export default function CompaniesAdmin() {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_URL}?entity_type=company`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Token': authService.getSessionToken() || '',
         },
-        body: JSON.stringify({ entity_type: 'company' }),
       });
       const data = await response.json();
       if (data.companies) setCompanies(data.companies);
@@ -98,13 +97,12 @@ export default function CompaniesAdmin() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_URL}?entity_type=department`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Token': authService.getSessionToken() || '',
         },
-        body: JSON.stringify({ entity_type: 'department' }),
       });
       const data = await response.json();
       if (data.departments) setDepartments(data.departments);

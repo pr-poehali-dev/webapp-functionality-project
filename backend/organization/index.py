@@ -91,8 +91,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     try:
-        body_data = json.loads(event.get('body', '{}')) if method in ['POST', 'PUT'] else {}
-        entity_type = body_data.get('entity_type', 'company')
+        # For GET requests, read entity_type from query params, for POST/PUT from body
+        if method == 'GET':
+            query_params = event.get('queryStringParameters', {}) or {}
+            entity_type = query_params.get('entity_type', 'company')
+            body_data = {}
+        else:
+            body_data = json.loads(event.get('body', '{}'))
+            entity_type = body_data.get('entity_type', 'company')
         
         if entity_type == 'company':
             return handle_companies(method, user, body_data, headers, cors_headers, event)

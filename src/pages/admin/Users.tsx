@@ -115,13 +115,12 @@ export default function UsersAdmin() {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch(COMPANIES_API_URL, {
+      const response = await fetch(`${COMPANIES_API_URL}?entity_type=company`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Token': authService.getSessionToken() || '',
         },
-        body: JSON.stringify({ entity_type: 'company' }),
       });
       const data = await response.json();
       if (data.companies) setCompanies(data.companies.filter((c: Company) => c.is_active));
@@ -132,13 +131,12 @@ export default function UsersAdmin() {
 
   const fetchDepartments = async (company_id: number) => {
     try {
-      const response = await fetch(COMPANIES_API_URL, {
+      const response = await fetch(`${COMPANIES_API_URL}?entity_type=department&company_id=${company_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Token': authService.getSessionToken() || '',
         },
-        body: JSON.stringify({ entity_type: 'department', company_id }),
       });
       const data = await response.json();
       if (data.departments) {
