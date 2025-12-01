@@ -73,18 +73,22 @@ export default function AccessGroupsAdmin() {
         headers: { 'X-Session-Token': authService.getSessionToken() || '' },
       });
       const data = await response.json();
+      console.log('Permissions data:', data);
       if (data.permissions) {
         setPermissions(data.permissions);
         // Group by category if not already provided
         if (data.by_category) {
+          console.log('Using by_category from backend:', data.by_category);
           setPermissionsByCategory(data.by_category);
         } else {
+          console.log('Grouping permissions manually');
           const grouped: PermissionsByCategory = {};
           data.permissions.forEach((perm: Permission) => {
             const category = perm.category || 'Прочее';
             if (!grouped[category]) grouped[category] = [];
             grouped[category].push(perm);
           });
+          console.log('Grouped permissions:', grouped);
           setPermissionsByCategory(grouped);
         }
       }
@@ -224,26 +228,30 @@ export default function AccessGroupsAdmin() {
             </div>
             <div className="space-y-4">
               <Label>Права доступа</Label>
-              {Object.entries(permissionsByCategory).map(([category, perms]) => (
-                <Card key={category} className="p-4">
-                  <h4 className="font-semibold mb-3 capitalize">{category}</h4>
-                  <div className="space-y-2">
-                    {perms.map((perm) => (
-                      <div key={perm.id} className="flex items-start space-x-2">
-                        <Checkbox
-                          id={`perm-${perm.id}`}
-                          checked={selectedPermissions.includes(perm.id)}
-                          onCheckedChange={() => togglePermission(perm.id)}
-                        />
-                        <label htmlFor={`perm-${perm.id}`} className="text-sm cursor-pointer">
-                          <div className="font-medium">{perm.name}</div>
-                          <div className="text-muted-foreground">{perm.description}</div>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              ))}
+              {Object.keys(permissionsByCategory).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Загрузка прав доступа...</p>
+              ) : (
+                Object.entries(permissionsByCategory).map(([category, perms]) => (
+                  <Card key={category} className="p-4">
+                    <h4 className="font-semibold mb-3">{category}</h4>
+                    <div className="space-y-2">
+                      {perms.map((perm) => (
+                        <div key={perm.id} className="flex items-start space-x-2">
+                          <Checkbox
+                            id={`perm-${perm.id}`}
+                            checked={selectedPermissions.includes(perm.id)}
+                            onCheckedChange={() => togglePermission(perm.id)}
+                          />
+                          <label htmlFor={`perm-${perm.id}`} className="text-sm cursor-pointer">
+                            <div className="font-medium">{perm.name}</div>
+                            <div className="text-muted-foreground">{perm.description}</div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
           <DialogFooter>
