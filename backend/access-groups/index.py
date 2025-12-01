@@ -37,14 +37,45 @@ def check_permission(user_id: int, permission_code: str) -> bool:
     cur = conn.cursor()
     
     cur.execute('''
+        SELECT u.role_id, u.department_id FROM users u WHERE u.id = %s
+    ''', (user_id,))
+    
+    user = cur.fetchone()
+    if not user:
+        cur.close()
+        conn.close()
+        return False
+    
+    role_id = user['role_id']
+    department_id = user['department_id']
+    
+    if department_id:
+        cur.execute('''
+            SELECT d.access_group_id FROM departments d WHERE d.id = %s
+        ''', (department_id,))
+        dept = cur.fetchone()
+        dept_access_group_id = dept['access_group_id'] if dept else None
+    else:
+        dept_access_group_id = None
+    
+    access_group_ids = []
+    if role_id:
+        access_group_ids.append(role_id)
+    if dept_access_group_id:
+        access_group_ids.append(dept_access_group_id)
+    
+    if not access_group_ids:
+        cur.close()
+        conn.close()
+        return False
+    
+    placeholders = ','.join(['%s'] * len(access_group_ids))
+    cur.execute(f'''
         SELECT COUNT(*) as count
-        FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
-        LEFT JOIN access_group_permissions agp ON agp.access_group_id = d.access_group_id
-        LEFT JOIN access_group_permissions agp2 ON agp2.access_group_id = u.role_id
-        LEFT JOIN permissions p ON p.id = COALESCE(agp.permission_id, agp2.permission_id)
-        WHERE u.id = %s AND p.code = %s
-    ''', (user_id, permission_code))
+        FROM permissions p
+        INNER JOIN access_group_permissions agp ON agp.permission_id = p.id
+        WHERE agp.access_group_id IN ({placeholders}) AND p.code = %s
+    ''', (*access_group_ids, permission_code))
     
     result = cur.fetchone()
     cur.close()
