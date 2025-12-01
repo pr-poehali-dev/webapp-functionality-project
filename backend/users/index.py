@@ -14,7 +14,7 @@ import bcrypt
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor, options='-c search_path=t_p66738329_webapp_functionality')
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -25,8 +25,8 @@ def get_user_by_session(session_token: str) -> Optional[Dict]:
     
     cur.execute('''
         SELECT u.id, u.username, u.email, u.full_name, u.role_id, u.is_blocked
-        FROM users u
-        INNER JOIN user_sessions s ON s.user_id = u.id
+        FROM t_p66738329_webapp_functionality.users u
+        INNER JOIN t_p66738329_webapp_functionality.user_sessions s ON s.user_id = u.id
         WHERE s.session_token = %s AND s.expires_at > NOW()
     ''', (session_token,))
     
@@ -42,9 +42,9 @@ def check_permission(user_id: int, permission_code: str) -> bool:
     
     cur.execute('''
         SELECT COUNT(*) as count
-        FROM permissions p
-        INNER JOIN role_permissions rp ON rp.permission_id = p.id
-        INNER JOIN users u ON u.role_id = rp.role_id
+        FROM t_p66738329_webapp_functionality.permissions p
+        INNER JOIN t_p66738329_webapp_functionality.role_permissions rp ON rp.permission_id = p.id
+        INNER JOIN t_p66738329_webapp_functionality.users u ON u.role_id = rp.role_id
         WHERE u.id = %s AND p.code = %s
     ''', (user_id, permission_code))
     
@@ -116,10 +116,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                            u.created_at, u.updated_at, u.last_login, u.company_id, u.department_id,
                            r.name as role_name, r.description as role_description,
                            c.name as company_name, d.name as department_name
-                    FROM users u
-                    LEFT JOIN roles r ON u.role_id = r.id
-                    LEFT JOIN companies c ON u.company_id = c.id
-                    LEFT JOIN departments d ON u.department_id = d.id
+                    FROM t_p66738329_webapp_functionality.users u
+                    LEFT JOIN t_p66738329_webapp_functionality.roles r ON u.role_id = r.id
+                    LEFT JOIN t_p66738329_webapp_functionality.companies c ON u.company_id = c.id
+                    LEFT JOIN t_p66738329_webapp_functionality.departments d ON u.department_id = d.id
                     WHERE u.id = %s
                 ''', (user_id,))
                 
@@ -146,9 +146,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     SELECT u.id, u.username, u.email, u.full_name, u.is_blocked,
                            u.created_at, u.last_login, u.company_id, u.department_id,
                            c.name as company_name, d.name as department_name
-                    FROM users u
-                    LEFT JOIN companies c ON u.company_id = c.id
-                    LEFT JOIN departments d ON u.department_id = d.id
+                    FROM t_p66738329_webapp_functionality.users u
+                    LEFT JOIN t_p66738329_webapp_functionality.companies c ON u.company_id = c.id
+                    LEFT JOIN t_p66738329_webapp_functionality.departments d ON u.department_id = d.id
                     ORDER BY u.created_at DESC
                 ''')
                 
@@ -196,7 +196,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             try:
                 cur.execute('''
-                    INSERT INTO users (username, email, password_hash, full_name, company_id, department_id, created_by)
+                    INSERT INTO t_p66738329_webapp_functionality.users (username, email, password_hash, full_name, company_id, department_id, created_by)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, username, email, full_name, company_id, department_id, is_blocked, created_at
                 ''', (username, email, password_hash, full_name, company_id, department_id, current_user['id']))
@@ -207,7 +207,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 user_agent = headers.get('user-agent', 'unknown')
                 
                 cur.execute('''
-                    INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id, 
+                    INSERT INTO t_p66738329_webapp_functionality.audit_log (user_id, username, action_type, entity_type, entity_id, 
                                            description, ip_address, user_agent)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ''', (current_user['id'], current_user['username'], 'user.create', 'user', new_user['id'],
@@ -261,18 +261,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 is_blocked = body_data.get('is_blocked', True)
                 
-                cur.execute('SELECT username FROM users WHERE id = %s', (user_id,))
+                cur.execute('SELECT username FROM t_p66738329_webapp_functionality.users WHERE id = %s', (user_id,))
                 target_user = cur.fetchone()
                 target_username = target_user['username'] if target_user else 'Unknown'
                 
-                cur.execute('UPDATE users SET is_blocked = %s, updated_at = NOW() WHERE id = %s', (is_blocked, user_id))
+                cur.execute('UPDATE t_p66738329_webapp_functionality.users SET is_blocked = %s, updated_at = NOW() WHERE id = %s', (is_blocked, user_id))
                 
                 ip_address = headers.get('x-forwarded-for', '').split(',')[0] or headers.get('x-real-ip', 'unknown')
                 user_agent = headers.get('user-agent', 'unknown')
                 
                 action_text = 'заблокирован' if is_blocked else 'разблокирован'
                 cur.execute('''
-                    INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id, 
+                    INSERT INTO t_p66738329_webapp_functionality.audit_log (user_id, username, action_type, entity_type, entity_id, 
                                            description, ip_address, user_agent)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ''', (current_user['id'], current_user['username'], 
@@ -331,7 +331,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 updates.append('updated_at = NOW()')
                 params.append(user_id)
                 
-                query = f"UPDATE users SET {', '.join(updates)} WHERE id = %s"
+                query = f"UPDATE t_p66738329_webapp_functionality.users SET {', '.join(updates)} WHERE id = %s"
                 
                 try:
                     cur.execute(query, params)
