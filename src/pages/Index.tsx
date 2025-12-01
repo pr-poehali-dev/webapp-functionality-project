@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -10,6 +11,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import { authService } from '@/lib/auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type Section = 'dashboard' | 'courses' | 'trainers' | 'analytics' | 'achievements' | 'profile';
 
@@ -68,6 +78,15 @@ interface DoctorCase {
   questions: string[];
   correctActions: string[];
 }
+
+export default function Index() {
+  const navigate = useNavigate();
+  const currentUser = authService.getUser();
+
+  const handleLogout = async () => {
+    await authService.logout();
+    navigate('/login');
+  };
 
 const mockCourses: Course[] = [
   {
@@ -902,9 +921,52 @@ const Index = () => {
               <Button variant="ghost" size="icon">
                 <Icon name="Bell" size={20} />
               </Button>
-              <Avatar>
-                <AvatarFallback>😊</AvatarFallback>
-              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback>
+                        {currentUser?.full_name.split(' ').map(n => n[0]).join('').substring(0, 2) || '👤'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline">{currentUser?.full_name || 'Пользователь'}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{currentUser?.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{currentUser?.email}</p>
+                      <Badge variant="secondary" className="w-fit text-xs mt-1">
+                        {currentUser?.role_name}
+                      </Badge>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setActiveSection('profile')}>
+                    <Icon name="User" size={16} className="mr-2" />
+                    Профиль
+                  </DropdownMenuItem>
+                  {authService.hasAnyPermission(['users.view', 'roles.view']) && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                        <Icon name="Users" size={16} className="mr-2" />
+                        Управление пользователями
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/admin/roles')}>
+                        <Icon name="ShieldCheck" size={16} className="mr-2" />
+                        Управление ролями
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <Icon name="LogOut" size={16} className="mr-2" />
+                    Выход
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -1258,4 +1320,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+}

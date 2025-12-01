@@ -1,0 +1,50 @@
+{
+  "tests": [
+    {
+      "name": "Login with invalid username",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "login",
+        "username": "nonexistent",
+        "password": "anypassword"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login with invalid credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "login",
+        "username": "admin",
+        "password": "wrongpassword"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Validate session",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "validate"
+      },
+      "headers": {
+        "X-Session-Token": "test-token"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

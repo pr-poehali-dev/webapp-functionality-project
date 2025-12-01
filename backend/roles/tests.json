@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "name": "Get all roles",
+      "method": "GET",
+      "path": "/",
+      "queryStringParameters": {
+        "resource": "roles"
+      },
+      "headers": {
+        "X-Session-Token": "test-token"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get all permissions",
+      "method": "GET",
+      "path": "/",
+      "queryStringParameters": {
+        "resource": "permissions"
+      },
+      "headers": {
+        "X-Session-Token": "test-token"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
