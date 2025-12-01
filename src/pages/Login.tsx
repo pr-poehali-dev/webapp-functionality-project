@@ -19,9 +19,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await authService.login(username, password);
+      console.log('[LOGIN] Attempting login...', username);
+      const result = await authService.login(username, password);
+      console.log('[LOGIN] Login successful!', result);
       navigate('/');
     } catch (err) {
+      console.error('[LOGIN] Login failed:', err);
       setError(err instanceof Error ? err.message : 'Ошибка авторизации');
     } finally {
       setLoading(false);
