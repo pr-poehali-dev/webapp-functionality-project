@@ -141,6 +141,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 user_dict = dict(user)
                 
+                print(f"[LOGIN] User: {user_dict['username']}, Blocked: {user_dict['is_blocked']}")
+                print(f"[LOGIN] Input password: '{password}'")
+                print(f"[LOGIN] Hash from DB: {user_dict['password_hash']}")
+                
                 if user_dict['is_blocked']:
                     cur.close()
                     conn.close()
@@ -151,7 +155,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                if not verify_password(password, user_dict['password_hash']):
+                try:
+                    password_check = verify_password(password, user_dict['password_hash'])
+                    print(f"[LOGIN] Password check result: {password_check}")
+                except Exception as e:
+                    print(f"[LOGIN] Error during password verification: {e}")
+                    password_check = False
+                
+                if not password_check:
                     cur.close()
                     conn.close()
                     return {
