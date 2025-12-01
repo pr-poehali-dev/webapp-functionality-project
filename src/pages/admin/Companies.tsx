@@ -63,10 +63,10 @@ export default function CompaniesAdmin() {
     is_active: true,
   });
 
-  const currentUser = authService.getCurrentUser();
-  const hasViewPermission = currentUser?.permissions?.includes('companies.view');
-  const hasCreatePermission = currentUser?.permissions?.includes('companies.create');
-  const hasEditPermission = currentUser?.permissions?.includes('companies.edit');
+  const currentUser = authService.getUser();
+  const hasViewPermission = authService.hasPermission('companies.view');
+  const hasCreatePermission = authService.hasPermission('companies.create');
+  const hasEditPermission = authService.hasPermission('companies.edit');
 
   useEffect(() => {
     if (!hasViewPermission) {
