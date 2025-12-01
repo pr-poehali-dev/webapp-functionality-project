@@ -334,6 +334,22 @@ export default function Index() {
         <p className="text-muted-foreground">Продолжайте обучение и развивайте свои навыки</p>
       </div>
 
+      {/* AI Recommendations Card */}
+      <Card className="p-6 mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/my-learning')}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
+              <Icon name="Sparkles" size={24} className="text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-1">AI рекомендации для вас</h3>
+              <p className="text-sm text-muted-foreground">Персональные курсы и тренажеры на основе вашего прогресса</p>
+            </div>
+          </div>
+          <Icon name="ArrowRight" size={20} className="text-muted-foreground" />
+        </div>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-6">

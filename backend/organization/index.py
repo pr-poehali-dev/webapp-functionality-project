@@ -110,6 +110,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return handle_courses(method, user, body_data, headers, cors_headers, event)
         elif entity_type == 'trainer':
             return handle_trainers(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'recommendations':
+            return handle_recommendations(method, user, body_data, headers, cors_headers, event)
         else:
             return {
                 'statusCode': 400,
@@ -119,6 +121,263 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
     
     except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': cors_headers,
+            'body': json.dumps({'error': str(e)}),
+            'isBase64Encoded': False
+        }
+
+def calculate_text_similarity(text1, text2):
+    """Calculate text similarity using word intersection/union ratio"""
+    if not text1 or not text2:
+        return 0.0
+    
+    words1 = set(text1.lower().split())
+    words2 = set(text2.lower().split())
+    
+    intersection = len(words1 & words2)
+    union = len(words1 | words2)
+    
+    return intersection / union if union > 0 else 0.0
+
+def handle_recommendations(method, user, body_data, headers, cors_headers, event):
+    if method != 'GET':
+        return {
+            'statusCode': 405,
+            'headers': cors_headers,
+            'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
+        }
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Get user's department_id
+        cur.execute('''
+            SELECT u.id, u.department_id
+            FROM t_p66738329_webapp_functionality.users u
+            WHERE u.id = %s
+        ''', (user['id'],))
+        user_data = cur.fetchone()
+        
+        if not user_data:
+            return {
+                'statusCode': 404,
+                'headers': cors_headers,
+                'body': json.dumps({'error': 'User not found'}),
+                'isBase64Encoded': False
+            }
+        
+        # Get completed courses
+        cur.execute('''
+            SELECT c.id, c.title, c.description, c.duration_hours
+            FROM t_p66738329_webapp_functionality.course_progress cp
+            INNER JOIN t_p66738329_webapp_functionality.courses c ON c.id = cp.course_id
+            WHERE cp.user_id = %s AND cp.status = 'completed'
+        ''', (user['id'],))
+        completed_courses = [dict(row) for row in cur.fetchall()]
+        
+        # Get completed trainers
+        cur.execute('''
+            SELECT t.id, t.name, t.specialization, t.difficulty_level
+            FROM t_p66738329_webapp_functionality.trainer_progress tp
+            INNER JOIN t_p66738329_webapp_functionality.trainers t ON t.id = tp.trainer_id
+            WHERE tp.user_id = %s AND tp.status = 'completed'
+        ''', (user['id'],))
+        completed_trainers = [dict(row) for row in cur.fetchall()]
+        
+        # Get available courses (not completed)
+        completed_course_ids = [c['id'] for c in completed_courses]
+        if completed_course_ids:
+            placeholders = ','.join(['%s'] * len(completed_course_ids))
+            cur.execute(f'''
+                SELECT id, title, description, duration_hours, category
+                FROM t_p66738329_webapp_functionality.courses
+                WHERE id NOT IN ({placeholders}) AND is_active = true
+            ''', completed_course_ids)
+        else:
+            cur.execute('''
+                SELECT id, title, description, duration_hours, category
+                FROM t_p66738329_webapp_functionality.courses
+                WHERE is_active = true
+            ''')
+        available_courses = [dict(row) for row in cur.fetchall()]
+        
+        # Get available trainers (not completed)
+        completed_trainer_ids = [t['id'] for t in completed_trainers]
+        if completed_trainer_ids:
+            placeholders = ','.join(['%s'] * len(completed_trainer_ids))
+            cur.execute(f'''
+                SELECT id, name, specialization, difficulty_level, bio
+                FROM t_p66738329_webapp_functionality.trainers
+                WHERE id NOT IN ({placeholders}) AND is_active = true
+            ''', completed_trainer_ids)
+        else:
+            cur.execute('''
+                SELECT id, name, specialization, difficulty_level, bio
+                FROM t_p66738329_webapp_functionality.trainers
+                WHERE is_active = true
+            ''')
+        available_trainers = [dict(row) for row in cur.fetchall()]
+        
+        # Calculate recommendations
+        course_recommendations = []
+        trainer_recommendations = []
+        
+        if not completed_courses and not completed_trainers:
+            # Beginner-friendly recommendations
+            for course in available_courses:
+                score = 0
+                reasons = []
+                
+                if course.get('duration_hours', 999) <= 10:
+                    score += 5
+                    reasons.append('Short duration - beginner friendly')
+                
+                if 'beginner' in (course.get('title', '') + ' ' + course.get('description', '')).lower():
+                    score += 10
+                    reasons.append('Beginner level content')
+                
+                if 'introduction' in (course.get('title', '') + ' ' + course.get('description', '')).lower():
+                    score += 8
+                    reasons.append('Introductory course')
+                
+                course_recommendations.append({
+                    'id': course['id'],
+                    'title': course['title'],
+                    'description': course.get('description', ''),
+                    'duration_hours': course.get('duration_hours'),
+                    'score': score + 1,  # Base score for all
+                    'reasons': reasons if reasons else ['Great starting point']
+                })
+            
+            for trainer in available_trainers:
+                score = 0
+                reasons = []
+                
+                if trainer.get('difficulty_level', '').lower() in ['beginner', 'easy']:
+                    score += 10
+                    reasons.append('Beginner-friendly trainer')
+                
+                if 'introduction' in (trainer.get('name', '') + ' ' + trainer.get('specialization', '')).lower():
+                    score += 5
+                    reasons.append('Introductory training')
+                
+                trainer_recommendations.append({
+                    'id': trainer['id'],
+                    'name': trainer['name'],
+                    'specialization': trainer.get('specialization', ''),
+                    'difficulty_level': trainer.get('difficulty_level', ''),
+                    'score': score + 1,  # Base score for all
+                    'reasons': reasons if reasons else ['Recommended for new learners']
+                })
+        else:
+            # AI-based recommendations using similarity
+            for course in available_courses:
+                score = 0
+                reasons = []
+                course_text = (course.get('title', '') + ' ' + course.get('description', '')).lower()
+                
+                # Compare with completed courses
+                for completed_course in completed_courses:
+                    completed_text = (completed_course.get('title', '') + ' ' + completed_course.get('description', '')).lower()
+                    similarity = calculate_text_similarity(course_text, completed_text)
+                    if similarity > 0.1:
+                        score += 10 * similarity
+                        reasons.append(f'Similar to "{completed_course["title"]}"')
+                
+                # Compare with completed trainers
+                for completed_trainer in completed_trainers:
+                    trainer_text = (completed_trainer.get('name', '') + ' ' + completed_trainer.get('specialization', '')).lower()
+                    similarity = calculate_text_similarity(course_text, trainer_text)
+                    if similarity > 0.1:
+                        score += 5 * similarity
+                        reasons.append(f'Matches trainer: {completed_trainer["name"]}')
+                
+                # Bonus for short duration
+                if course.get('duration_hours', 999) <= 20:
+                    score += 2
+                    reasons.append('Manageable duration')
+                
+                if score > 0:
+                    course_recommendations.append({
+                        'id': course['id'],
+                        'title': course['title'],
+                        'description': course.get('description', ''),
+                        'duration_hours': course.get('duration_hours'),
+                        'score': round(score, 2),
+                        'reasons': reasons[:3]  # Top 3 reasons
+                    })
+            
+            for trainer in available_trainers:
+                score = 0
+                reasons = []
+                trainer_text = (trainer.get('name', '') + ' ' + trainer.get('specialization', '')).lower()
+                
+                # Compare with completed trainers
+                for completed_trainer in completed_trainers:
+                    completed_text = (completed_trainer.get('name', '') + ' ' + completed_trainer.get('specialization', '')).lower()
+                    similarity = calculate_text_similarity(trainer_text, completed_text)
+                    if similarity > 0.1:
+                        score += 10 * similarity
+                        reasons.append(f'Similar to "{completed_trainer["name"]}"')
+                
+                # Compare with completed courses
+                for completed_course in completed_courses:
+                    course_text = (completed_course.get('title', '') + ' ' + completed_course.get('description', '')).lower()
+                    similarity = calculate_text_similarity(trainer_text, course_text)
+                    if similarity > 0.1:
+                        score += 8 * similarity
+                        reasons.append(f'Matches course: {completed_course["title"]}')
+                
+                # Bonus for matching difficulty level
+                if completed_trainers:
+                    most_common_level = completed_trainers[-1].get('difficulty_level', '')
+                    if trainer.get('difficulty_level', '') == most_common_level:
+                        score += 3
+                        reasons.append(f'Matches your level: {most_common_level}')
+                
+                if score > 0:
+                    trainer_recommendations.append({
+                        'id': trainer['id'],
+                        'name': trainer['name'],
+                        'specialization': trainer.get('specialization', ''),
+                        'difficulty_level': trainer.get('difficulty_level', ''),
+                        'score': round(score, 2),
+                        'reasons': reasons[:3]  # Top 3 reasons
+                    })
+        
+        # Sort by score and get top 5
+        course_recommendations.sort(key=lambda x: x['score'], reverse=True)
+        trainer_recommendations.sort(key=lambda x: x['score'], reverse=True)
+        
+        top_courses = course_recommendations[:5]
+        top_trainers = trainer_recommendations[:5]
+        
+        result = {
+            'courses': top_courses,
+            'trainers': top_trainers,
+            'stats': {
+                'completed_courses': len(completed_courses),
+                'completed_trainers': len(completed_trainers)
+            }
+        }
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': cors_headers,
+            'body': json.dumps(result, default=str),
+            'isBase64Encoded': False
+        }
+    
+    except Exception as e:
+        cur.close()
+        conn.close()
         return {
             'statusCode': 500,
             'headers': cors_headers,
