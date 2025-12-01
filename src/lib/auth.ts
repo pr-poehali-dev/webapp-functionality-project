@@ -167,6 +167,10 @@ class AuthService {
     return this.currentUser;
   }
 
+  getUserId(): number | null {
+    return this.currentUser?.id || null;
+  }
+
   getSessionToken(): string | null {
     return this.sessionToken;
   }

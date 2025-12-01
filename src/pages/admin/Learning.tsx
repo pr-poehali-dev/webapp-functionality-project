@@ -83,11 +83,12 @@ export default function LearningAdmin() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch(`${LEARNING_API_URL}?entity_type=course`, {
-        headers: { 'X-Session-Token': authService.getSessionToken() || '' },
+      const userId = authService.getUserId();
+      const response = await fetch(`${LEARNING_API_URL}?resource=courses`, {
+        headers: { 'X-User-Id': userId?.toString() || '' },
       });
       const data = await response.json();
-      if (data.courses) setCourses(data.courses);
+      if (Array.isArray(data)) setCourses(data);
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось загрузить курсы', variant: 'destructive' });
     } finally {
@@ -97,11 +98,12 @@ export default function LearningAdmin() {
 
   const fetchTrainers = async () => {
     try {
-      const response = await fetch(`${LEARNING_API_URL}?entity_type=trainer`, {
-        headers: { 'X-Session-Token': authService.getSessionToken() || '' },
+      const userId = authService.getUserId();
+      const response = await fetch(`${LEARNING_API_URL}?resource=trainers`, {
+        headers: { 'X-User-Id': userId?.toString() || '' },
       });
       const data = await response.json();
-      if (data.trainers) setTrainers(data.trainers);
+      if (Array.isArray(data)) setTrainers(data);
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось загрузить тренажеры', variant: 'destructive' });
     }
@@ -109,8 +111,10 @@ export default function LearningAdmin() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch(`${LEARNING_API_URL}?entity_type=department`, {
-        headers: { 'X-Session-Token': authService.getSessionToken() || '' },
+      const userId = authService.getUserId();
+      const orgUrl = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
+      const response = await fetch(`${orgUrl}?entity_type=department`, {
+        headers: { 'X-User-Id': userId?.toString() || '' },
       });
       const data = await response.json();
       if (data.departments) {
@@ -125,68 +129,49 @@ export default function LearningAdmin() {
     }
   };
 
-  const fetchCourseDetails = async (courseId: number) => {
-    try {
-      const response = await fetch(`${LEARNING_API_URL}?entity_type=course&id=${courseId}`, {
-        headers: { 'X-Session-Token': authService.getSessionToken() || '' },
-      });
-      const data = await response.json();
-      if (data.course) {
-        setEditingItem(data.course);
-        setCourseForm({
-          title: data.course.title,
-          description: data.course.description || '',
-          content: data.course.content || '',
-          duration_hours: data.course.duration_hours || 0,
-          is_active: data.course.is_active,
-        });
-        setSelectedDepartments(data.course.departments?.map((d: Department) => d.id) || []);
-        setDialogType('course');
-        setShowDialog(true);
-      }
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить курс', variant: 'destructive' });
-    }
+  const openCourseEdit = (course: Course) => {
+    setEditingItem(course);
+    setCourseForm({
+      title: course.title,
+      description: course.description || '',
+      content: course.content || '',
+      duration_hours: course.duration_hours || 0,
+      is_active: course.is_active,
+    });
+    setSelectedDepartments(course.departments?.map((d: Department) => d.id) || []);
+    setDialogType('course');
+    setShowDialog(true);
   };
 
-  const fetchTrainerDetails = async (trainerId: number) => {
-    try {
-      const response = await fetch(`${LEARNING_API_URL}?entity_type=trainer&id=${trainerId}`, {
-        headers: { 'X-Session-Token': authService.getSessionToken() || '' },
-      });
-      const data = await response.json();
-      if (data.trainer) {
-        setEditingItem(data.trainer);
-        setTrainerForm({
-          title: data.trainer.title,
-          description: data.trainer.description || '',
-          content: data.trainer.content || '',
-          difficulty_level: data.trainer.difficulty_level || 'Начальный',
-          is_active: data.trainer.is_active,
-        });
-        setSelectedDepartments(data.trainer.departments?.map((d: Department) => d.id) || []);
-        setDialogType('trainer');
-        setShowDialog(true);
-      }
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить тренажер', variant: 'destructive' });
-    }
+  const openTrainerEdit = (trainer: Trainer) => {
+    setEditingItem(trainer);
+    setTrainerForm({
+      title: trainer.title,
+      description: trainer.description || '',
+      content: trainer.content || '',
+      difficulty_level: trainer.difficulty_level || 'Начальный',
+      is_active: trainer.is_active,
+    });
+    setSelectedDepartments(trainer.departments?.map((d: Department) => d.id) || []);
+    setDialogType('trainer');
+    setShowDialog(true);
   };
 
   const handleSave = async () => {
     try {
+      const userId = authService.getUserId();
       const isEdit = !!editingItem;
       const isCourse = dialogType === 'course';
       const formData = isCourse ? courseForm : trainerForm;
+      const resource = isCourse ? 'courses' : 'trainers';
       
-      const response = await fetch(LEARNING_API_URL, {
+      const response = await fetch(`${LEARNING_API_URL}?resource=${resource}`, {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': authService.getSessionToken() || '',
+          'X-User-Id': userId?.toString() || '',
         },
         body: JSON.stringify({
-          entity_type: isCourse ? 'course' : 'trainer',
           ...(isEdit && { id: editingItem.id }),
           ...formData,
           department_ids: selectedDepartments,
@@ -268,7 +253,7 @@ export default function LearningAdmin() {
           <TabsContent value="courses" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {courses.map((course) => (
-                <Card key={course.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => fetchCourseDetails(course.id)}>
+                <Card key={course.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openCourseEdit(course)}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                       <Icon name="BookOpen" size={24} className="text-primary" />
@@ -290,7 +275,7 @@ export default function LearningAdmin() {
           <TabsContent value="trainers" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {trainers.map((trainer) => (
-                <Card key={trainer.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => fetchTrainerDetails(trainer.id)}>
+                <Card key={trainer.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openTrainerEdit(trainer)}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
                       <Icon name="Zap" size={24} className="text-secondary" />
