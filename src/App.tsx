@@ -10,6 +10,7 @@ import UsersAdmin from "./pages/admin/Users";
 import AccessGroupsAdmin from "./pages/admin/AccessGroups";
 import CompaniesAdmin from "./pages/admin/Companies";
 import LearningAdmin from "./pages/admin/Learning";
+import LearningAnalytics from "./pages/admin/LearningAnalytics";
 import AuditLog from "./pages/admin/AuditLog";
 import MyLearning from "./pages/employee/MyLearning";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/admin/access-groups" element={<ProtectedRoute requiredPermission="access_groups.view"><AccessGroupsAdmin /></ProtectedRoute>} />
           <Route path="/admin/companies" element={<ProtectedRoute requiredPermission="companies.view"><CompaniesAdmin /></ProtectedRoute>} />
           <Route path="/admin/learning" element={<ProtectedRoute requiredPermission="courses.view"><LearningAdmin /></ProtectedRoute>} />
+          <Route path="/admin/learning-analytics" element={<ProtectedRoute requiredPermission="courses.view"><LearningAnalytics /></ProtectedRoute>} />
           <Route path="/admin/audit" element={<ProtectedRoute requiredPermission="system.logs"><AuditLog /></ProtectedRoute>} />
           <Route path="/my-learning" element={<ProtectedRoute><MyLearning /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

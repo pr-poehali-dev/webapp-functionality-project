@@ -227,6 +227,10 @@ export default function LearningAdmin() {
                 <p className="text-sm text-muted-foreground">Создание учебных материалов</p>
               </div>
             </div>
+            <Button variant="outline" onClick={() => navigate('/admin/learning-analytics')}>
+              <Icon name="BarChart3" size={18} className="mr-2" />
+              Аналитика
+            </Button>
           </div>
         </div>
       </header>

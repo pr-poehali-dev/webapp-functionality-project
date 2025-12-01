@@ -617,6 +617,10 @@ export default function Index() {
                       <Icon name="BookOpen" size={16} className="mr-2" />
                       Курсы и тренажеры
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/admin/learning-analytics')}>
+                      <Icon name="BarChart3" size={16} className="mr-2" />
+                      Аналитика обучения
+                    </DropdownMenuItem>
                   </>
                 )}
                 <DropdownMenuSeparator />

@@ -367,24 +367,46 @@ def handle_progress(event: Dict[str, Any], user_id: int, conn, cur) -> Dict[str,
     
     # GET /progress
     if method == 'GET':
-        target_user_id = query_params.get('user_id', user_id)
+        target_user_id = query_params.get('user_id')
         
         if progress_type == 'course':
-            cur.execute('''
-                SELECT cp.*, c.title, c.description, c.duration_hours
-                FROM t_p66738329_webapp_functionality.course_progress cp
-                INNER JOIN t_p66738329_webapp_functionality.courses c ON c.id = cp.course_id
-                WHERE cp.user_id = %s
-                ORDER BY cp.updated_at DESC
-            ''', (target_user_id,))
+            if target_user_id:
+                cur.execute('''
+                    SELECT cp.*, c.title, c.description, c.duration_hours
+                    FROM t_p66738329_webapp_functionality.course_progress cp
+                    INNER JOIN t_p66738329_webapp_functionality.courses c ON c.id = cp.course_id
+                    WHERE cp.user_id = %s
+                    ORDER BY cp.updated_at DESC
+                ''', (target_user_id,))
+            else:
+                cur.execute('''
+                    SELECT cp.*, c.title, c.description, c.duration_hours,
+                           u.username, u.full_name, d.name as department_name
+                    FROM t_p66738329_webapp_functionality.course_progress cp
+                    INNER JOIN t_p66738329_webapp_functionality.courses c ON c.id = cp.course_id
+                    INNER JOIN t_p66738329_webapp_functionality.users u ON u.id = cp.user_id
+                    LEFT JOIN t_p66738329_webapp_functionality.departments d ON d.id = u.department_id
+                    ORDER BY cp.updated_at DESC
+                ''')
         else:
-            cur.execute('''
-                SELECT tp.*, t.title, t.description, t.difficulty_level
-                FROM t_p66738329_webapp_functionality.trainer_progress tp
-                INNER JOIN t_p66738329_webapp_functionality.trainers t ON t.id = tp.trainer_id
-                WHERE tp.user_id = %s
-                ORDER BY tp.updated_at DESC
-            ''', (target_user_id,))
+            if target_user_id:
+                cur.execute('''
+                    SELECT tp.*, t.title, t.description, t.difficulty_level
+                    FROM t_p66738329_webapp_functionality.trainer_progress tp
+                    INNER JOIN t_p66738329_webapp_functionality.trainers t ON t.id = tp.trainer_id
+                    WHERE tp.user_id = %s
+                    ORDER BY tp.updated_at DESC
+                ''', (target_user_id,))
+            else:
+                cur.execute('''
+                    SELECT tp.*, t.title, t.description, t.difficulty_level,
+                           u.username, u.full_name, d.name as department_name
+                    FROM t_p66738329_webapp_functionality.trainer_progress tp
+                    INNER JOIN t_p66738329_webapp_functionality.trainers t ON t.id = tp.trainer_id
+                    INNER JOIN t_p66738329_webapp_functionality.users u ON u.id = tp.user_id
+                    LEFT JOIN t_p66738329_webapp_functionality.departments d ON d.id = u.department_id
+                    ORDER BY tp.updated_at DESC
+                ''')
         
         progress = cur.fetchall()
         return {
