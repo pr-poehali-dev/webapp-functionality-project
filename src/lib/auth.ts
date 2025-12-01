@@ -1,6 +1,6 @@
 const AUTH_API_URL = 'https://functions.poehali.dev/d0d8a117-25d4-4bae-9e4d-c6192bbe7497';
 const USERS_API_URL = 'https://functions.poehali.dev/aa434c46-4b09-4a1f-a196-d854bed8176c';
-const ROLES_API_URL = 'https://functions.poehali.dev/450fa889-54fa-4dc6-b8c3-bd76bd2342dc';
+const ACCESS_GROUPS_API_URL = 'https://functions.poehali.dev/a2c227f5-7853-45de-837a-b5b92bf15a1d';
 const AUDIT_API_URL = 'https://functions.poehali.dev/8698496d-ca4c-4393-a952-ada40d9a22d9';
 
 export interface User {
@@ -189,4 +189,4 @@ class AuthService {
 }
 
 export const authService = new AuthService();
-export { AUTH_API_URL, USERS_API_URL, ROLES_API_URL, AUDIT_API_URL };
+export { AUTH_API_URL, USERS_API_URL, ACCESS_GROUPS_API_URL, AUDIT_API_URL };

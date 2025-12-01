@@ -291,27 +291,29 @@ def handle_departments(method, user, body_data, headers, cors_headers, event):
         
         if company_id:
             cur.execute('''
-                SELECT d.id, d.company_id, d.name, d.description, d.is_active, 
-                       d.created_at, d.updated_at, c.name as company_name,
+                SELECT d.id, d.company_id, d.name, d.description, d.access_group_id, d.is_active, 
+                       d.created_at, d.updated_at, c.name as company_name, ag.group_name as access_group_name,
                        COUNT(DISTINCT u.id) as users_count
                 FROM departments d
                 INNER JOIN companies c ON c.id = d.company_id
+                LEFT JOIN access_groups ag ON ag.id = d.access_group_id
                 LEFT JOIN users u ON u.department_id = d.id
                 WHERE d.company_id = %s
-                GROUP BY d.id, d.company_id, d.name, d.description, d.is_active, 
-                         d.created_at, d.updated_at, c.name
+                GROUP BY d.id, d.company_id, d.name, d.description, d.access_group_id, d.is_active, 
+                         d.created_at, d.updated_at, c.name, ag.group_name
                 ORDER BY d.name
             ''', (company_id,))
         else:
             cur.execute('''
-                SELECT d.id, d.company_id, d.name, d.description, d.is_active,
-                       d.created_at, d.updated_at, c.name as company_name,
+                SELECT d.id, d.company_id, d.name, d.description, d.access_group_id, d.is_active,
+                       d.created_at, d.updated_at, c.name as company_name, ag.group_name as access_group_name,
                        COUNT(DISTINCT u.id) as users_count
                 FROM departments d
                 INNER JOIN companies c ON c.id = d.company_id
+                LEFT JOIN access_groups ag ON ag.id = d.access_group_id
                 LEFT JOIN users u ON u.department_id = d.id
-                GROUP BY d.id, d.company_id, d.name, d.description, d.is_active,
-                         d.created_at, d.updated_at, c.name
+                GROUP BY d.id, d.company_id, d.name, d.description, d.access_group_id, d.is_active,
+                         d.created_at, d.updated_at, c.name, ag.group_name
                 ORDER BY c.name, d.name
             ''')
         
@@ -338,6 +340,7 @@ def handle_departments(method, user, body_data, headers, cors_headers, event):
         company_id = body_data.get('company_id')
         name = body_data.get('name', '').strip()
         description = body_data.get('description', '').strip()
+        access_group_id = body_data.get('access_group_id')
         is_active = body_data.get('is_active', True)
         
         if not company_id or not name:
@@ -352,10 +355,10 @@ def handle_departments(method, user, body_data, headers, cors_headers, event):
         cur = conn.cursor()
         
         cur.execute('''
-            INSERT INTO departments (company_id, name, description, is_active)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, company_id, name, description, is_active, created_at, updated_at
-        ''', (company_id, name, description, is_active))
+            INSERT INTO departments (company_id, name, description, access_group_id, is_active)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, company_id, name, description, access_group_id, is_active, created_at, updated_at
+        ''', (company_id, name, description, access_group_id, is_active))
         
         department = dict(cur.fetchone())
         
@@ -393,6 +396,7 @@ def handle_departments(method, user, body_data, headers, cors_headers, event):
         company_id = body_data.get('company_id')
         name = body_data.get('name', '').strip()
         description = body_data.get('description', '').strip()
+        access_group_id = body_data.get('access_group_id')
         is_active = body_data.get('is_active')
         
         if not department_id or not company_id or not name:
@@ -408,10 +412,10 @@ def handle_departments(method, user, body_data, headers, cors_headers, event):
         
         cur.execute('''
             UPDATE departments 
-            SET company_id = %s, name = %s, description = %s, is_active = %s, updated_at = CURRENT_TIMESTAMP
+            SET company_id = %s, name = %s, description = %s, access_group_id = %s, is_active = %s, updated_at = CURRENT_TIMESTAMP
             WHERE id = %s
-            RETURNING id, company_id, name, description, is_active, created_at, updated_at
-        ''', (company_id, name, description, is_active, department_id))
+            RETURNING id, company_id, name, description, access_group_id, is_active, created_at, updated_at
+        ''', (company_id, name, description, access_group_id, is_active, department_id))
         
         if cur.rowcount == 0:
             cur.close()

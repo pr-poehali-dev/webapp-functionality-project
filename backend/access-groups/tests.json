@@ -1,0 +1,39 @@
+{
+  "tests": [
+    {
+      "name": "Get access groups without auth",
+      "method": "GET",
+      "path": "/?resource=access_groups",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get permissions without auth",
+      "method": "GET",
+      "path": "/?resource=permissions",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create access group without auth",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "name": "Test Group",
+        "description": "Test",
+        "permission_ids": []
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

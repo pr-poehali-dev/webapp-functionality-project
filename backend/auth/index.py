@@ -48,9 +48,11 @@ def get_user_by_session(session_token: str) -> Optional[Dict]:
     
     cur.execute('''
         SELECT u.id, u.username, u.email, u.full_name, u.role_id, u.is_blocked,
-               r.name as role_name
+               u.department_id, d.name as department_name, d.access_group_id,
+               ag.group_name as access_group_name
         FROM users u
-        LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN access_groups ag ON d.access_group_id = ag.id
         INNER JOIN user_sessions s ON s.user_id = u.id
         WHERE s.session_token = %s AND s.expires_at > NOW()
     ''', (session_token,))
@@ -65,12 +67,15 @@ def get_user_permissions(user_id: int) -> list:
     conn = get_db_connection()
     cur = conn.cursor()
     
+    # Get permissions from department's access group OR from old role_id (fallback)
     cur.execute('''
         SELECT DISTINCT p.code
         FROM users u
-        INNER JOIN role_permissions rp ON rp.role_id = u.role_id
-        INNER JOIN permissions p ON p.id = rp.permission_id
-        WHERE u.id = %s
+        LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN access_group_permissions agp ON agp.access_group_id = d.access_group_id
+        LEFT JOIN access_group_permissions agp2 ON agp2.access_group_id = u.role_id
+        LEFT JOIN permissions p ON p.id = COALESCE(agp.permission_id, agp2.permission_id)
+        WHERE u.id = %s AND p.code IS NOT NULL
     ''', (user_id,))
     
     permissions = [row['code'] for row in cur.fetchall()]
@@ -121,9 +126,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cur.execute('''
                     SELECT u.id, u.username, u.email, u.full_name, u.password_hash, u.role_id, u.is_blocked,
-                           r.name as role_name
+                           u.department_id, d.name as department_name, d.access_group_id,
+                           ag.group_name as access_group_name
                     FROM users u
-                    LEFT JOIN roles r ON u.role_id = r.id
+                    LEFT JOIN departments d ON u.department_id = d.id
+                    LEFT JOIN access_groups ag ON d.access_group_id = ag.id
                     WHERE u.username = %s
                 ''', (username,))
                 
@@ -211,8 +218,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'username': user_dict['username'],
                             'email': user_dict['email'],
                             'full_name': user_dict['full_name'],
-                            'role_id': user_dict['role_id'],
-                            'role_name': user_dict['role_name']
+                            'department_id': user_dict.get('department_id'),
+                            'department_name': user_dict.get('department_name'),
+                            'access_group_id': user_dict.get('access_group_id'),
+                            'access_group_name': user_dict.get('access_group_name')
                         },
                         'permissions': permissions
                     }),

@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
-import { authService, ROLES_API_URL } from '@/lib/auth';
+import { authService, ACCESS_GROUPS_API_URL } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
-interface Role {
+interface AccessGroup {
   id: number;
   name: string;
   description: string;
@@ -32,15 +32,15 @@ interface PermissionsByCategory {
   [category: string]: Permission[];
 }
 
-export default function RolesAdmin() {
+export default function AccessGroupsAdmin() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [accessGroups, setAccessGroups] = useState<AccessGroup[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permissionsByCategory, setPermissionsByCategory] = useState<PermissionsByCategory>({});
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editingAccessGroup, setEditingAccessGroup] = useState<AccessGroup | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
   
   const [formData, setFormData] = useState({
@@ -49,19 +49,19 @@ export default function RolesAdmin() {
   });
 
   useEffect(() => {
-    fetchRoles();
+    fetchAccessGroups();
     fetchPermissions();
   }, []);
 
-  const fetchRoles = async () => {
+  const fetchAccessGroups = async () => {
     try {
-      const response = await fetch(`${ROLES_API_URL}?resource=roles`, {
+      const response = await fetch(`${ACCESS_GROUPS_API_URL}?resource=access_groups`, {
         headers: { 'X-Session-Token': authService.getSessionToken() || '' },
       });
       const data = await response.json();
-      if (data.roles) setRoles(data.roles);
+      if (data.access_groups) setAccessGroups(data.access_groups);
     } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить роли', variant: 'destructive' });
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить группы доступа', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function RolesAdmin() {
 
   const fetchPermissions = async () => {
     try {
-      const response = await fetch(`${ROLES_API_URL}?resource=permissions`, {
+      const response = await fetch(`${ACCESS_GROUPS_API_URL}?resource=permissions`, {
         headers: { 'X-Session-Token': authService.getSessionToken() || '' },
       });
       const data = await response.json();
@@ -80,34 +80,34 @@ export default function RolesAdmin() {
     }
   };
 
-  const fetchRoleDetails = async (roleId: number) => {
+  const fetchAccessGroupDetails = async (accessGroupId: number) => {
     try {
-      const response = await fetch(`${ROLES_API_URL}?resource=roles&id=${roleId}`, {
+      const response = await fetch(`${ACCESS_GROUPS_API_URL}?resource=access_groups&id=${accessGroupId}`, {
         headers: { 'X-Session-Token': authService.getSessionToken() || '' },
       });
       const data = await response.json();
-      if (data.role) {
-        setEditingRole(data.role);
-        setFormData({ name: data.role.name, description: data.role.description });
-        setSelectedPermissions(data.role.permissions.map((p: Permission) => p.id));
+      if (data.access_group) {
+        setEditingAccessGroup(data.access_group);
+        setFormData({ name: data.access_group.name, description: data.access_group.description });
+        setSelectedPermissions(data.access_group.permissions.map((p: Permission) => p.id));
         setShowDialog(true);
       }
     } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить роль', variant: 'destructive' });
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить группу доступа', variant: 'destructive' });
     }
   };
 
   const handleSave = async () => {
     try {
-      const isEdit = !!editingRole;
-      const response = await fetch(ROLES_API_URL, {
+      const isEdit = !!editingAccessGroup;
+      const response = await fetch(ACCESS_GROUPS_API_URL, {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Token': authService.getSessionToken() || '',
         },
         body: JSON.stringify({
-          ...(isEdit && { role_id: editingRole.id }),
+          ...(isEdit && { access_group_id: editingAccessGroup.id }),
           name: formData.name,
           description: formData.description,
           permission_ids: selectedPermissions,
@@ -115,23 +115,23 @@ export default function RolesAdmin() {
       });
 
       if (response.ok) {
-        toast({ title: 'Успех', description: isEdit ? 'Роль обновлена' : 'Роль создана' });
+        toast({ title: 'Успех', description: isEdit ? 'Группа доступа обновлена' : 'Группа доступа создана' });
         setShowDialog(false);
         resetForm();
-        fetchRoles();
+        fetchAccessGroups();
       } else {
         const error = await response.json();
         toast({ title: 'Ошибка', description: error.error, variant: 'destructive' });
       }
     } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось сохранить роль', variant: 'destructive' });
+      toast({ title: 'Ошибка', description: 'Не удалось сохранить группу доступа', variant: 'destructive' });
     }
   };
 
   const resetForm = () => {
     setFormData({ name: '', description: '' });
     setSelectedPermissions([]);
-    setEditingRole(null);
+    setEditingAccessGroup(null);
   };
 
   const togglePermission = (permId: number) => {
@@ -158,13 +158,13 @@ export default function RolesAdmin() {
                 <Icon name="ArrowLeft" size={20} />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">Управление ролями и правами</h1>
+                <h1 className="text-2xl font-bold">Управление группами доступа и правами</h1>
                 <p className="text-sm text-muted-foreground">Создание и настройка профилей прав</p>
               </div>
             </div>
             <Button onClick={() => { resetForm(); setShowDialog(true); }}>
               <Icon name="Plus" size={18} className="mr-2" />
-              Создать роль
+              Создать группу доступа
             </Button>
           </div>
         </div>
@@ -172,16 +172,16 @@ export default function RolesAdmin() {
 
       <main className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {roles.map((role) => (
-            <Card key={role.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => fetchRoleDetails(role.id)}>
+          {accessGroups.map((accessGroup) => (
+            <Card key={accessGroup.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => fetchAccessGroupDetails(accessGroup.id)}>
               <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Icon name="ShieldCheck" size={24} className="text-primary" />
                 </div>
-                <Badge>{role.users_count} польз.</Badge>
+                <Badge>{accessGroup.users_count} польз.</Badge>
               </div>
-              <h3 className="font-semibold text-lg mb-2">{role.name}</h3>
-              <p className="text-sm text-muted-foreground">{role.description}</p>
+              <h3 className="font-semibold text-lg mb-2">{accessGroup.name}</h3>
+              <p className="text-sm text-muted-foreground">{accessGroup.description}</p>
             </Card>
           ))}
         </div>
@@ -190,11 +190,11 @@ export default function RolesAdmin() {
       <Dialog open={showDialog} onOpenChange={(open) => { setShowDialog(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingRole ? 'Редактирование роли' : 'Создание роли'}</DialogTitle>
+            <DialogTitle>{editingAccessGroup ? 'Редактирование группы доступа' : 'Создание группы доступа'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label>Название роли</Label>
+              <Label>Название группы доступа</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -206,7 +206,7 @@ export default function RolesAdmin() {
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Краткое описание роли"
+                placeholder="Краткое описание группы доступа"
               />
             </div>
             <div className="space-y-4">
@@ -222,12 +222,10 @@ export default function RolesAdmin() {
                           checked={selectedPermissions.includes(perm.id)}
                           onCheckedChange={() => togglePermission(perm.id)}
                         />
-                        <div className="flex-1">
-                          <Label htmlFor={`perm-${perm.id}`} className="font-normal cursor-pointer">
-                            {perm.name}
-                          </Label>
-                          <p className="text-xs text-muted-foreground">{perm.description}</p>
-                        </div>
+                        <label htmlFor={`perm-${perm.id}`} className="text-sm cursor-pointer">
+                          <div className="font-medium">{perm.name}</div>
+                          <div className="text-muted-foreground">{perm.description}</div>
+                        </label>
                       </div>
                     ))}
                   </div>
@@ -240,7 +238,7 @@ export default function RolesAdmin() {
               Отмена
             </Button>
             <Button onClick={handleSave}>
-              {editingRole ? 'Сохранить' : 'Создать'}
+              {editingAccessGroup ? 'Сохранить' : 'Создать'}
             </Button>
           </DialogFooter>
         </DialogContent>

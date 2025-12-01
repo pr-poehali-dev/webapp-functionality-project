@@ -784,13 +784,13 @@ export default function Index() {
               {authService.hasPermission('users.view') && (
                 <>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin/access-groups')}>
+                    <Icon name="Shield" size={16} className="mr-2" />
+                    Группы доступа
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                     <Icon name="Users" size={16} className="mr-2" />
-                    Управление пользователями
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin/roles')}>
-                    <Icon name="Shield" size={16} className="mr-2" />
-                    Роли и права
+                    Пользователи
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/admin/companies')}>
                     <Icon name="Building2" size={16} className="mr-2" />

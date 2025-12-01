@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import UsersAdmin from "./pages/admin/Users";
-import RolesAdmin from "./pages/admin/Roles";
+import AccessGroupsAdmin from "./pages/admin/AccessGroups";
 import CompaniesAdmin from "./pages/admin/Companies";
 import AuditLog from "./pages/admin/AuditLog";
 import NotFound from "./pages/NotFound";
@@ -25,7 +25,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requiredPermission="users.view"><UsersAdmin /></ProtectedRoute>} />
-          <Route path="/admin/roles" element={<ProtectedRoute requiredPermission="roles.view"><RolesAdmin /></ProtectedRoute>} />
+          <Route path="/admin/access-groups" element={<ProtectedRoute requiredPermission="access_groups.view"><AccessGroupsAdmin /></ProtectedRoute>} />
           <Route path="/admin/companies" element={<ProtectedRoute requiredPermission="companies.view"><CompaniesAdmin /></ProtectedRoute>} />
           <Route path="/admin/audit" element={<ProtectedRoute requiredPermission="system.logs"><AuditLog /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

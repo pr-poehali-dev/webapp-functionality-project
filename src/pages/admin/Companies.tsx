@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
-import { authService } from '@/lib/auth';
+import { authService, ACCESS_GROUPS_API_URL } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
 const API_URL = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
@@ -34,8 +34,16 @@ interface Department {
   name: string;
   description: string;
   users_count: number;
+  access_group_id?: number;
+  access_group_name?: string;
   is_active: boolean;
   created_at?: string;
+}
+
+interface AccessGroup {
+  id: number;
+  name: string;
+  description: string;
 }
 
 export default function CompaniesAdmin() {
@@ -43,6 +51,7 @@ export default function CompaniesAdmin() {
   const { toast } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [accessGroups, setAccessGroups] = useState<AccessGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('companies');
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
@@ -60,6 +69,7 @@ export default function CompaniesAdmin() {
     company_id: '',
     name: '',
     description: '',
+    access_group_id: '',
     is_active: true,
   });
 
@@ -75,6 +85,7 @@ export default function CompaniesAdmin() {
     }
     fetchCompanies();
     fetchDepartments();
+    fetchAccessGroups();
   }, [hasViewPermission, navigate]);
 
   const fetchCompanies = async () => {
@@ -108,6 +119,22 @@ export default function CompaniesAdmin() {
       if (data.departments) setDepartments(data.departments);
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось загрузить подразделения', variant: 'destructive' });
+    }
+  };
+
+  const fetchAccessGroups = async () => {
+    try {
+      const response = await fetch(`${ACCESS_GROUPS_API_URL}?resource=access_groups`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+      });
+      const data = await response.json();
+      if (data.access_groups) setAccessGroups(data.access_groups);
+    } catch (error) {
+      console.error('Failed to fetch access groups:', error);
     }
   };
 
@@ -197,6 +224,7 @@ export default function CompaniesAdmin() {
           company_id: parseInt(departmentForm.company_id),
           name: departmentForm.name,
           description: departmentForm.description,
+          access_group_id: departmentForm.access_group_id ? parseInt(departmentForm.access_group_id) : null,
           is_active: departmentForm.is_active,
         }),
       });
@@ -204,7 +232,7 @@ export default function CompaniesAdmin() {
       if (response.ok) {
         toast({ title: 'Успех', description: 'Подразделение создано' });
         setShowDepartmentDialog(false);
-        setDepartmentForm({ company_id: '', name: '', description: '', is_active: true });
+        setDepartmentForm({ company_id: '', name: '', description: '', access_group_id: '', is_active: true });
         fetchDepartments();
         fetchCompanies();
       } else {
@@ -235,6 +263,7 @@ export default function CompaniesAdmin() {
           company_id: parseInt(departmentForm.company_id),
           name: departmentForm.name,
           description: departmentForm.description,
+          access_group_id: departmentForm.access_group_id ? parseInt(departmentForm.access_group_id) : null,
           is_active: departmentForm.is_active,
         }),
       });
@@ -271,6 +300,7 @@ export default function CompaniesAdmin() {
       company_id: department.company_id.toString(),
       name: department.name,
       description: department.description,
+      access_group_id: department.access_group_id?.toString() || '',
       is_active: department.is_active,
     });
     setShowDepartmentDialog(true);
@@ -451,7 +481,7 @@ export default function CompaniesAdmin() {
                   <TableRow>
                     <TableHead>Компания</TableHead>
                     <TableHead>Название</TableHead>
-                    <TableHead>Описание</TableHead>
+                    <TableHead>Группа доступа</TableHead>
                     <TableHead className="text-center">Сотрудники</TableHead>
                     <TableHead className="text-center">Статус</TableHead>
                     <TableHead className="text-right">Действия</TableHead>
@@ -469,7 +499,13 @@ export default function CompaniesAdmin() {
                       <TableRow key={department.id}>
                         <TableCell className="font-medium">{department.company_name}</TableCell>
                         <TableCell>{department.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{department.description}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {department.access_group_name ? (
+                            <Badge variant="outline">{department.access_group_name}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Не назначена</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-center">{department.users_count}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant={department.is_active ? 'default' : 'secondary'}>
@@ -567,7 +603,7 @@ export default function CompaniesAdmin() {
         setShowDepartmentDialog(open);
         if (!open) {
           setEditingDepartment(null);
-          setDepartmentForm({ company_id: '', name: '', description: '', is_active: true });
+          setDepartmentForm({ company_id: '', name: '', description: '', access_group_id: '', is_active: true });
         }
       }}>
         <DialogContent>
@@ -611,6 +647,24 @@ export default function CompaniesAdmin() {
                 placeholder="Описание подразделения"
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department-access-group">Группа доступа</Label>
+              <Select
+                value={departmentForm.access_group_id}
+                onValueChange={(value) => setDepartmentForm({ ...departmentForm, access_group_id: value })}
+              >
+                <SelectTrigger id="department-access-group">
+                  <SelectValue placeholder="Выберите группу доступа" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accessGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="department-active">Активно</Label>
