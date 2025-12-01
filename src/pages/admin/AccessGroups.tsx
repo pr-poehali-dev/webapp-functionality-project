@@ -73,8 +73,21 @@ export default function AccessGroupsAdmin() {
         headers: { 'X-Session-Token': authService.getSessionToken() || '' },
       });
       const data = await response.json();
-      if (data.permissions) setPermissions(data.permissions);
-      if (data.by_category) setPermissionsByCategory(data.by_category);
+      if (data.permissions) {
+        setPermissions(data.permissions);
+        // Group by category if not already provided
+        if (data.by_category) {
+          setPermissionsByCategory(data.by_category);
+        } else {
+          const grouped: PermissionsByCategory = {};
+          data.permissions.forEach((perm: Permission) => {
+            const category = perm.category || 'Прочее';
+            if (!grouped[category]) grouped[category] = [];
+            grouped[category].push(perm);
+          });
+          setPermissionsByCategory(grouped);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch permissions:', error);
     }

@@ -104,9 +104,54 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
+                access_group_id = query_params.get('id')
+                
                 conn = get_db_connection()
                 cur = conn.cursor()
                 
+                # If id is provided, return single access group with permissions
+                if access_group_id:
+                    cur.execute('''
+                        SELECT ag.id, ag.group_name as name, ag.description, ag.is_system, ag.created_at
+                        FROM access_groups ag
+                        WHERE ag.id = %s
+                    ''', (access_group_id,))
+                    
+                    access_group = cur.fetchone()
+                    
+                    if not access_group:
+                        cur.close()
+                        conn.close()
+                        return {
+                            'statusCode': 404,
+                            'headers': cors_headers,
+                            'body': json.dumps({'error': 'Access group not found'}),
+                            'isBase64Encoded': False
+                        }
+                    
+                    access_group = dict(access_group)
+                    
+                    # Get permissions for this access group
+                    cur.execute('''
+                        SELECT p.id, p.code, p.name, p.description, p.category
+                        FROM permissions p
+                        INNER JOIN access_group_permissions agp ON agp.permission_id = p.id
+                        WHERE agp.access_group_id = %s
+                        ORDER BY p.category, p.code
+                    ''', (access_group_id,))
+                    
+                    access_group['permissions'] = [dict(row) for row in cur.fetchall()]
+                    cur.close()
+                    conn.close()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': cors_headers,
+                        'body': json.dumps({'access_group': access_group}, default=str),
+                        'isBase64Encoded': False
+                    }
+                
+                # Otherwise return all access groups
                 cur.execute('''
                     SELECT ag.id, ag.group_name as name, ag.description, ag.is_system, ag.created_at,
                            COUNT(DISTINCT d.id) as departments_count,
@@ -148,13 +193,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 ''')
                 
                 permissions = [dict(row) for row in cur.fetchall()]
+                
+                # Group permissions by category
+                by_category = {}
+                for perm in permissions:
+                    category = perm.get('category', 'Прочее')
+                    if category not in by_category:
+                        by_category[category] = []
+                    by_category[category].append(perm)
+                
                 cur.close()
                 conn.close()
                 
                 return {
                     'statusCode': 200,
                     'headers': cors_headers,
-                    'body': json.dumps({'permissions': permissions}),
+                    'body': json.dumps({'permissions': permissions, 'by_category': by_category}),
                     'isBase64Encoded': False
                 }
             
