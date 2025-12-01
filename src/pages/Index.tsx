@@ -15,194 +15,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-
-interface Course {
-  id: number;
-  title: string;
-  description: string;
-  progress: number;
-  category: string;
-  duration: string;
-  status: 'not-started' | 'in-progress' | 'completed';
-  lessons?: Lesson[];
-}
-
-interface Lesson {
-  id: number;
-  title: string;
-  duration: string;
-  completed: boolean;
-  type: 'video' | 'text' | 'quiz';
-}
-
-interface QuizQuestion {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-}
-
-interface VoiceStep {
-  id: number;
-  prompt: string;
-  expectedKeywords: string[];
-}
-
-interface Achievement {
-  id: number;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  progress: number;
-  total: number;
-}
-
-interface LeaderboardEntry {
-  id: number;
-  name: string;
-  avatar: string;
-  points: number;
-  rank: number;
-  coursesCompleted: number;
-}
-
-const mockCourses: Course[] = [
-  {
-    id: 1,
-    title: 'Продажи стоматологических услуг',
-    description: 'Техники продаж для администраторов стоматологии',
-    progress: 75,
-    category: 'Продажи',
-    duration: '4 часа',
-    status: 'in-progress',
-    lessons: [
-      { id: 1, title: 'Введение в продажи', duration: '15 мин', completed: true, type: 'video' },
-      { id: 2, title: 'Техники активных продаж', duration: '30 мин', completed: true, type: 'video' },
-      { id: 3, title: 'Тест: Основы продаж', duration: '10 мин', completed: false, type: 'quiz' },
-    ]
-  },
-  {
-    id: 2,
-    title: 'Работа с пациентами',
-    description: 'Общение с пациентами и работа с возражениями',
-    progress: 100,
-    category: 'Сервис',
-    duration: '3 часа',
-    status: 'completed',
-    lessons: [
-      { id: 4, title: 'Психология пациента', duration: '20 мин', completed: true, type: 'text' },
-      { id: 5, title: 'Работа с возражениями', duration: '25 мин', completed: true, type: 'video' },
-    ]
-  },
-  {
-    id: 3,
-    title: 'Презентация лечения',
-    description: 'Как правильно представить план лечения пациенту',
-    progress: 0,
-    category: 'Продажи',
-    duration: '5 часов',
-    status: 'not-started',
-    lessons: []
-  }
-];
-
-const mockQuizQuestions: QuizQuestion[] = [
-  {
-    id: 1,
-    question: 'Какой первый шаг в технике активных продаж?',
-    options: ['Презентация услуги', 'Выявление потребностей', 'Закрытие сделки', 'Работа с возражениями'],
-    correctAnswer: 1
-  },
-  {
-    id: 2,
-    question: 'Что важнее всего при работе с пациентом?',
-    options: ['Скорость обслуживания', 'Эмпатия и понимание', 'Знание прайса', 'Красивая речь'],
-    correctAnswer: 1
-  },
-  {
-    id: 3,
-    question: 'Как правильно реагировать на возражение "Дорого"?',
-    options: ['Сразу дать скидку', 'Выяснить истинную причину', 'Сравнить с конкурентами', 'Перейти к другой услуге'],
-    correctAnswer: 1
-  }
-];
-
-const mockVoiceSteps: VoiceStep[] = [
-  {
-    id: 1,
-    prompt: 'Поздоровайтесь с пациентом и представьтесь',
-    expectedKeywords: ['здравствуйте', 'добрый день', 'меня зовут']
-  },
-  {
-    id: 2,
-    prompt: 'Спросите, как вы можете помочь пациенту',
-    expectedKeywords: ['помочь', 'чем могу', 'обратились']
-  },
-  {
-    id: 3,
-    prompt: 'Предложите записаться на консультацию',
-    expectedKeywords: ['записаться', 'консультация', 'прием', 'врач']
-  }
-];
-
-const mockAchievements: Achievement[] = [
-  {
-    id: 1,
-    title: 'Первый шаг',
-    description: 'Завершите первый урок',
-    icon: 'Award',
-    unlocked: true,
-    progress: 1,
-    total: 1
-  },
-  {
-    id: 2,
-    title: 'Знаток продаж',
-    description: 'Завершите 5 уроков по продажам',
-    icon: 'TrendingUp',
-    unlocked: true,
-    progress: 5,
-    total: 5
-  },
-  {
-    id: 3,
-    title: 'Мастер общения',
-    description: 'Пройдите все тренажеры голосового общения',
-    icon: 'Mic',
-    unlocked: false,
-    progress: 2,
-    total: 5
-  },
-  {
-    id: 4,
-    title: 'Отличник',
-    description: 'Наберите 90%+ в 10 тестах',
-    icon: 'Star',
-    unlocked: false,
-    progress: 3,
-    total: 10
-  }
-];
-
-const mockLeaderboard: LeaderboardEntry[] = [
-  { id: 1, name: 'Анна Смирнова', avatar: 'АС', points: 3500, rank: 1, coursesCompleted: 8 },
-  { id: 2, name: 'Мария Петрова', avatar: 'МП', points: 3200, rank: 2, coursesCompleted: 7 },
-  { id: 3, name: 'Елена Иванова', avatar: 'ЕИ', points: 2800, rank: 3, coursesCompleted: 6 },
-  { id: 4, name: 'Ольга Васильева', avatar: 'ОВ', points: 2150, rank: 4, coursesCompleted: 5 },
-  { id: 5, name: 'Дарья Козлова', avatar: 'ДК', points: 1900, rank: 5, coursesCompleted: 4 },
-];
+import { Course } from '@/components/dashboard/types';
+import { mockCourses, mockQuizQuestions, mockVoiceSteps, mockAchievements, mockLeaderboard } from '@/components/dashboard/mockData';
+import TrainerDialogs from '@/components/dashboard/TrainerDialogs';
+import CourseDialog from '@/components/dashboard/CourseDialog';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -287,7 +107,6 @@ export default function Index() {
       setCurrentVoiceStep(currentVoiceStep + 1);
       setVoiceResponse('');
     } else {
-      // Complete voice training
       setVoiceDialog(false);
       setCurrentVoiceStep(0);
       setVoiceResponse('');
@@ -296,7 +115,6 @@ export default function Index() {
 
   const handleStartRecording = () => {
     setIsRecording(true);
-    // In real app, start actual recording
     setTimeout(() => {
       setIsRecording(false);
       setVoiceResponse('Пример записанного ответа...');
@@ -308,7 +126,6 @@ export default function Index() {
       setDoctorMessages([...doctorMessages, { role: 'user', content: doctorInput }]);
       setDoctorInput('');
       
-      // Simulate doctor response
       setTimeout(() => {
         const responses = [
           'Хорошо, я понимаю вашу ситуацию. Давайте обсудим варианты лечения.',
@@ -323,7 +140,6 @@ export default function Index() {
 
   const handleSaveProfile = () => {
     console.log('Saving profile:', { profileName, profileEmail, profileBio });
-    // In real app, send to backend
   };
 
   // Render functions
@@ -668,7 +484,7 @@ export default function Index() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-primary">{entry.points}</p>
-                <p className="text-xs text-muted-foreground">баллов</p>
+                <p className="text-sm text-muted-foreground">баллов</p>
               </div>
             </div>
           ))}
@@ -681,34 +497,46 @@ export default function Index() {
     <div>
       <h2 className="text-3xl font-bold mb-6">Профиль</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Info */}
+        <Card className="p-6 md:col-span-1">
+          <div className="text-center">
+            <Avatar className="w-24 h-24 mx-auto mb-4">
+              <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                {currentUser?.full_name?.charAt(0) || 'A'}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="text-xl font-semibold mb-2">{currentUser?.full_name || 'Администратор'}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{currentUser?.email || 'admin@clinic.com'}</p>
+            <Badge>Администратор</Badge>
+          </div>
+        </Card>
+
         <Card className="p-6 md:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Личная информация</h3>
+          <h3 className="text-lg font-semibold mb-6">Редактировать профиль</h3>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name">Имя</Label>
-              <Input 
-                id="name" 
-                value={profileName} 
+              <Label htmlFor="name">Полное имя</Label>
+              <Input
+                id="name"
+                value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="Введите ваше имя"
               />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={profileEmail} 
+              <Input
+                id="email"
+                type="email"
+                value={profileEmail}
                 onChange={(e) => setProfileEmail(e.target.value)}
-                placeholder="email@example.com"
+                placeholder="Введите ваш email"
               />
             </div>
             <div>
               <Label htmlFor="bio">О себе</Label>
-              <Textarea 
-                id="bio" 
-                value={profileBio} 
+              <Textarea
+                id="bio"
+                value={profileBio}
                 onChange={(e) => setProfileBio(e.target.value)}
                 placeholder="Расскажите о себе"
                 rows={4}
@@ -720,120 +548,85 @@ export default function Index() {
             </Button>
           </div>
         </Card>
-
-        {/* Profile Stats */}
-        <Card className="p-6">
-          <div className="text-center mb-6">
-            <Avatar className="w-24 h-24 mx-auto mb-4">
-              <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                {currentUser?.full_name?.charAt(0) || 'A'}
-              </AvatarFallback>
-            </Avatar>
-            <h3 className="text-xl font-semibold">{currentUser?.full_name}</h3>
-            <p className="text-sm text-muted-foreground">{currentUser?.role || 'Администратор'}</p>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Уровень</span>
-              <Badge variant="default">5</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Баллы</span>
-              <span className="font-bold">2150</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Место в рейтинге</span>
-              <span className="font-bold">4</span>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">До следующего уровня</span>
-                <span className="font-medium">350 баллов</span>
-              </div>
-              <Progress value={70} />
-            </div>
-          </div>
-        </Card>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-background/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Icon name="GraduationCap" size={24} className="text-primary" />
+      <header className="border-b bg-card sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Icon name="GraduationCap" size={32} className="text-primary" />
+              <div>
+                <h1 className="text-lg font-bold">Платформа обучения</h1>
+                <p className="text-xs text-muted-foreground">Стоматологическая клиника</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold">Платформа обучения</h1>
-              <p className="text-xs text-muted-foreground">Стоматологическая клиника</p>
-            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {currentUser?.full_name?.charAt(0) || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline">{currentUser?.full_name || 'Администратор'}</span>
+                  <Icon name="ChevronDown" size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setActiveTab('profile')}>
+                  <Icon name="User" size={16} className="mr-2" />
+                  Профиль
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Icon name="Settings" size={16} className="mr-2" />
+                  Настройки
+                </DropdownMenuItem>
+                {authService.hasPermission('users.view') && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/admin/access-groups')}>
+                      <Icon name="Shield" size={16} className="mr-2" />
+                      Группы доступа
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                      <Icon name="Users" size={16} className="mr-2" />
+                      Пользователи
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/admin/companies')}>
+                      <Icon name="Building2" size={16} className="mr-2" />
+                      Компании и подразделения
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/admin/audit')}>
+                      <Icon name="FileText" size={16} className="mr-2" />
+                      Журнал аудита
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {authService.hasPermission('courses.view') && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/admin/learning')}>
+                      <Icon name="BookOpen" size={16} className="mr-2" />
+                      Курсы и тренажеры
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <Icon name="LogOut" size={16} className="mr-2" />
+                  Выйти
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {currentUser?.full_name?.charAt(0) || 'A'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden md:inline">{currentUser?.full_name || 'Администратор'}</span>
-                <Icon name="ChevronDown" size={16} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab('profile')}>
-                <Icon name="User" size={16} className="mr-2" />
-                Профиль
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Icon name="Settings" size={16} className="mr-2" />
-                Настройки
-              </DropdownMenuItem>
-              {authService.hasPermission('users.view') && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/admin/access-groups')}>
-                    <Icon name="Shield" size={16} className="mr-2" />
-                    Группы доступа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                    <Icon name="Users" size={16} className="mr-2" />
-                    Пользователи
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin/companies')}>
-                    <Icon name="Building2" size={16} className="mr-2" />
-                    Компании и подразделения
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin/audit')}>
-                    <Icon name="FileText" size={16} className="mr-2" />
-                    Журнал аудита
-                  </DropdownMenuItem>
-                </>
-              )}
-              {authService.hasPermission('courses.view') && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/admin/learning')}>
-                    <Icon name="BookOpen" size={16} className="mr-2" />
-                    Курсы и тренажеры
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                <Icon name="LogOut" size={16} className="mr-2" />
-                Выйти
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </header>
 
@@ -877,281 +670,39 @@ export default function Index() {
         </Tabs>
       </main>
 
-      {/* Quiz Dialog */}
-      <Dialog open={quizDialog} onOpenChange={setQuizDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Тестовый тренажер</DialogTitle>
-            <DialogDescription>
-              {quizScore === null ? 'Ответьте на вопросы, чтобы проверить свои знания' : 'Результаты теста'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {quizScore === null ? (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  Вопрос {currentQuizQuestion + 1} из {mockQuizQuestions.length}
-                </span>
-                <Progress value={((currentQuizQuestion + 1) / mockQuizQuestions.length) * 100} className="w-32" />
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold mb-4">
-                  {mockQuizQuestions[currentQuizQuestion].question}
-                </h3>
-                <div className="space-y-2">
-                  {mockQuizQuestions[currentQuizQuestion].options.map((option, index) => (
-                    <Button
-                      key={index}
-                      variant={quizAnswers[currentQuizQuestion] === index ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => handleQuizAnswer(currentQuizQuestion, index)}
-                    >
-                      {option}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+      {/* Dialogs */}
+      <TrainerDialogs
+        quizDialog={quizDialog}
+        setQuizDialog={setQuizDialog}
+        voiceDialog={voiceDialog}
+        setVoiceDialog={setVoiceDialog}
+        doctorDialog={doctorDialog}
+        setDoctorDialog={setDoctorDialog}
+        currentQuizQuestion={currentQuizQuestion}
+        quizAnswers={quizAnswers}
+        quizScore={quizScore}
+        currentVoiceStep={currentVoiceStep}
+        voiceResponse={voiceResponse}
+        isRecording={isRecording}
+        doctorScenario={doctorScenario}
+        setDoctorScenario={setDoctorScenario}
+        doctorMessages={doctorMessages}
+        doctorInput={doctorInput}
+        setDoctorInput={setDoctorInput}
+        handleQuizAnswer={handleQuizAnswer}
+        handleNextQuizQuestion={handleNextQuizQuestion}
+        handlePrevQuizQuestion={handlePrevQuizQuestion}
+        handleRestartQuiz={handleRestartQuiz}
+        handleStartRecording={handleStartRecording}
+        handleNextVoiceStep={handleNextVoiceStep}
+        handleSendDoctorMessage={handleSendDoctorMessage}
+      />
 
-              <div className="flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={handlePrevQuizQuestion}
-                  disabled={currentQuizQuestion === 0}
-                >
-                  <Icon name="ChevronLeft" size={16} className="mr-2" />
-                  Назад
-                </Button>
-                <Button
-                  onClick={handleNextQuizQuestion}
-                  disabled={quizAnswers[currentQuizQuestion] === undefined}
-                >
-                  {currentQuizQuestion === mockQuizQuestions.length - 1 ? 'Завершить' : 'Далее'}
-                  <Icon name="ChevronRight" size={16} className="ml-2" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center space-y-6">
-              <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center ${quizScore >= 70 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                <span className="text-4xl font-bold" style={{ color: quizScore >= 70 ? '#22c55e' : '#ef4444' }}>
-                  {quizScore}%
-                </span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold mb-2">
-                  {quizScore >= 70 ? 'Отлично!' : 'Нужно подучить'}
-                </h3>
-                <p className="text-muted-foreground">
-                  Вы ответили правильно на {quizAnswers.filter((answer, index) => answer === mockQuizQuestions[index].correctAnswer).length} из {mockQuizQuestions.length} вопросов
-                </p>
-              </div>
-              <div className="flex gap-4 justify-center">
-                <Button variant="outline" onClick={() => setQuizDialog(false)}>
-                  Закрыть
-                </Button>
-                <Button onClick={handleRestartQuiz}>
-                  <Icon name="RotateCcw" size={16} className="mr-2" />
-                  Пройти снова
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Voice Dialog */}
-      <Dialog open={voiceDialog} onOpenChange={setVoiceDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Голосовой тренажер</DialogTitle>
-            <DialogDescription>
-              Практикуйте общение с пациентами в голосовом формате
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">
-                Шаг {currentVoiceStep + 1} из {mockVoiceSteps.length}
-              </span>
-              <Progress value={((currentVoiceStep + 1) / mockVoiceSteps.length) * 100} className="w-32" />
-            </div>
-            
-            <Card className="p-6 bg-primary/5">
-              <p className="text-lg font-semibold mb-2">Ваша задача:</p>
-              <p className="text-muted-foreground">{mockVoiceSteps[currentVoiceStep].prompt}</p>
-            </Card>
-
-            <div className="text-center">
-              <Button
-                size="lg"
-                variant={isRecording ? 'destructive' : 'default'}
-                className="w-32 h-32 rounded-full"
-                onClick={handleStartRecording}
-                disabled={isRecording}
-              >
-                <Icon name="Mic" size={48} />
-              </Button>
-              <p className="text-sm text-muted-foreground mt-4">
-                {isRecording ? 'Идет запись...' : 'Нажмите, чтобы начать запись'}
-              </p>
-            </div>
-
-            {voiceResponse && (
-              <Card className="p-4">
-                <p className="text-sm font-semibold mb-2">Ваш ответ:</p>
-                <p className="text-muted-foreground">{voiceResponse}</p>
-              </Card>
-            )}
-
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setVoiceDialog(false)}
-              >
-                Закрыть
-              </Button>
-              <Button
-                onClick={handleNextVoiceStep}
-                disabled={!voiceResponse}
-              >
-                {currentVoiceStep === mockVoiceSteps.length - 1 ? 'Завершить' : 'Следующий шаг'}
-                <Icon name="ChevronRight" size={16} className="ml-2" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Doctor Dialog */}
-      <Dialog open={doctorDialog} onOpenChange={setDoctorDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Тренажер с врачом</DialogTitle>
-            <DialogDescription>
-              Симуляция реального диалога с врачом
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Button
-                variant={doctorScenario === 'consultation' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDoctorScenario('consultation')}
-              >
-                Консультация
-              </Button>
-              <Button
-                variant={doctorScenario === 'treatment' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDoctorScenario('treatment')}
-              >
-                План лечения
-              </Button>
-              <Button
-                variant={doctorScenario === 'emergency' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDoctorScenario('emergency')}
-              >
-                Экстренный случай
-              </Button>
-            </div>
-
-            <div className="border rounded-lg p-4 h-96 overflow-y-auto space-y-4">
-              {doctorMessages.length === 0 ? (
-                <div className="text-center text-muted-foreground py-12">
-                  <Icon name="MessageCircle" size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>Начните диалог с врачом</p>
-                </div>
-              ) : (
-                doctorMessages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <Card className={`p-3 max-w-[70%] ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                      <p className="text-sm">{message.content}</p>
-                    </Card>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <Input
-                value={doctorInput}
-                onChange={(e) => setDoctorInput(e.target.value)}
-                placeholder="Введите ваше сообщение..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSendDoctorMessage()}
-              />
-              <Button onClick={handleSendDoctorMessage} disabled={!doctorInput.trim()}>
-                <Icon name="Send" size={16} />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Course Details Dialog */}
-      {selectedCourse && (
-        <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>{selectedCourse.title}</DialogTitle>
-              <DialogDescription>{selectedCourse.description}</DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Badge>{selectedCourse.category}</Badge>
-                <Badge variant="outline">{selectedCourse.duration}</Badge>
-                <div className="flex-1 text-right">
-                  <span className="text-sm text-muted-foreground">
-                    Прогресс: {selectedCourse.progress}%
-                  </span>
-                </div>
-              </div>
-
-              <Progress value={selectedCourse.progress} />
-
-              <div className="space-y-2">
-                <h4 className="font-semibold">Уроки:</h4>
-                {selectedCourse.lessons && selectedCourse.lessons.length > 0 ? (
-                  selectedCourse.lessons.map((lesson) => (
-                    <Card key={lesson.id} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${lesson.completed ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
-                            <Icon 
-                              name={lesson.completed ? 'CheckCircle2' : lesson.type === 'video' ? 'Play' : lesson.type === 'quiz' ? 'ClipboardCheck' : 'FileText'} 
-                              size={20}
-                              className={lesson.completed ? 'text-green-600' : 'text-gray-400'}
-                            />
-                          </div>
-                          <div>
-                            <h5 className="font-medium">{lesson.title}</h5>
-                            <p className="text-sm text-muted-foreground">{lesson.duration}</p>
-                          </div>
-                        </div>
-                        <Button size="sm" variant={lesson.completed ? 'outline' : 'default'}>
-                          {lesson.completed ? 'Повторить' : 'Начать'}
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Уроки скоро появятся
-                  </p>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <CourseDialog
+        course={selectedCourse}
+        onClose={() => setSelectedCourse(null)}
+        onCompleteLesson={handleCompleteLesson}
+      />
     </div>
   );
 }
