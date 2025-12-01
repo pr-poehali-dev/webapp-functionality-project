@@ -74,7 +74,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    session_token = headers.get('x-session-token', '')
+    session_token = headers.get('X-Session-Token', headers.get('x-session-token', ''))
     
     if not session_token:
         return {
@@ -175,17 +175,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             
             username = body_data.get('username', '').strip()
-            email = body_data.get('email', '').strip()
+            email = body_data.get('email', '').strip() or None
             password = body_data.get('password', '')
             full_name = body_data.get('full_name', '').strip()
             company_id = body_data.get('company_id')
             department_id = body_data.get('department_id')
             
-            if not username or not email or not password or not full_name:
+            if not username or not password or not full_name:
                 return {
                     'statusCode': 400,
                     'headers': cors_headers,
-                    'body': json.dumps({'error': 'All fields are required'}),
+                    'body': json.dumps({'error': 'Username, password and full name are required'}),
                     'isBase64Encoded': False
                 }
             
