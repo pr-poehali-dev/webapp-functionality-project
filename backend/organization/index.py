@@ -112,6 +112,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return handle_trainers(method, user, body_data, headers, cors_headers, event)
         elif entity_type == 'recommendations':
             return handle_recommendations(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'progress':
+            return handle_progress(method, user, body_data, headers, cors_headers, event)
         else:
             return {
                 'statusCode': 400,
@@ -140,6 +142,226 @@ def calculate_text_similarity(text1, text2):
     union = len(words1 | words2)
     
     return intersection / union if union > 0 else 0.0
+
+def handle_progress(method, user, body_data, headers, cors_headers, event):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        if method == 'GET':
+            # Get user's progress
+            query_params = event.get('queryStringParameters', {}) or {}
+            target_user_id = int(query_params.get('user_id', user['id']))
+            
+            # Only allow users to view their own progress
+            if target_user_id != user['id']:
+                return {
+                    'statusCode': 403,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'Forbidden: Can only view own progress'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Get course progress
+            cur.execute('''
+                SELECT 
+                    cp.course_id,
+                    c.title,
+                    cp.status,
+                    cp.progress_percent,
+                    cp.started_at,
+                    cp.completed_at,
+                    cp.last_activity_at
+                FROM t_p66738329_webapp_functionality.course_progress cp
+                INNER JOIN t_p66738329_webapp_functionality.courses c ON c.id = cp.course_id
+                WHERE cp.user_id = %s
+                ORDER BY cp.last_activity_at DESC
+            ''', (target_user_id,))
+            courses = [dict(row) for row in cur.fetchall()]
+            
+            # Get trainer progress
+            cur.execute('''
+                SELECT 
+                    tp.trainer_id,
+                    t.name as title,
+                    tp.status,
+                    tp.progress_percent,
+                    tp.started_at,
+                    tp.completed_at,
+                    tp.last_activity_at
+                FROM t_p66738329_webapp_functionality.trainer_progress tp
+                INNER JOIN t_p66738329_webapp_functionality.trainers t ON t.id = tp.trainer_id
+                WHERE tp.user_id = %s
+                ORDER BY tp.last_activity_at DESC
+            ''', (target_user_id,))
+            trainers = [dict(row) for row in cur.fetchall()]
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'courses': courses, 'trainers': trainers}, default=str),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'POST':
+            # Start or update progress
+            progress_type = body_data.get('type')
+            item_id = body_data.get('id')
+            status = body_data.get('status', 'in_progress')
+            progress_percent = body_data.get('progress_percent', 0)
+            
+            if not progress_type or not item_id:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'Missing type or id'}),
+                    'isBase64Encoded': False
+                }
+            
+            if progress_type not in ['course', 'trainer']:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'Invalid type. Must be course or trainer'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Validate that course/trainer exists
+            if progress_type == 'course':
+                cur.execute('''
+                    SELECT id FROM t_p66738329_webapp_functionality.courses WHERE id = %s
+                ''', (item_id,))
+            else:
+                cur.execute('''
+                    SELECT id FROM t_p66738329_webapp_functionality.trainers WHERE id = %s
+                ''', (item_id,))
+            
+            if not cur.fetchone():
+                return {
+                    'statusCode': 404,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': f'{progress_type.capitalize()} not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Upsert progress
+            if status == 'completed':
+                progress_percent = 100
+            
+            if progress_type == 'course':
+                if status == 'completed':
+                    cur.execute('''
+                        INSERT INTO t_p66738329_webapp_functionality.course_progress 
+                            (user_id, course_id, status, progress_percent, started_at, last_activity_at, completed_at)
+                        VALUES (%s, %s, %s, %s, NOW(), NOW(), NOW())
+                        ON CONFLICT (user_id, course_id) 
+                        DO UPDATE SET 
+                            status = EXCLUDED.status,
+                            progress_percent = EXCLUDED.progress_percent,
+                            last_activity_at = NOW(),
+                            completed_at = NOW()
+                        RETURNING *
+                    ''', (user['id'], item_id, status, progress_percent))
+                else:
+                    cur.execute('''
+                        INSERT INTO t_p66738329_webapp_functionality.course_progress 
+                            (user_id, course_id, status, progress_percent, started_at, last_activity_at)
+                        VALUES (%s, %s, %s, %s, NOW(), NOW())
+                        ON CONFLICT (user_id, course_id) 
+                        DO UPDATE SET 
+                            status = EXCLUDED.status,
+                            progress_percent = EXCLUDED.progress_percent,
+                            last_activity_at = NOW()
+                        RETURNING *
+                    ''', (user['id'], item_id, status, progress_percent))
+            else:
+                if status == 'completed':
+                    cur.execute('''
+                        INSERT INTO t_p66738329_webapp_functionality.trainer_progress 
+                            (user_id, trainer_id, status, progress_percent, started_at, last_activity_at, completed_at)
+                        VALUES (%s, %s, %s, %s, NOW(), NOW(), NOW())
+                        ON CONFLICT (user_id, trainer_id) 
+                        DO UPDATE SET 
+                            status = EXCLUDED.status,
+                            progress_percent = EXCLUDED.progress_percent,
+                            last_activity_at = NOW(),
+                            completed_at = NOW()
+                        RETURNING *
+                    ''', (user['id'], item_id, status, progress_percent))
+                else:
+                    cur.execute('''
+                        INSERT INTO t_p66738329_webapp_functionality.trainer_progress 
+                            (user_id, trainer_id, status, progress_percent, started_at, last_activity_at)
+                        VALUES (%s, %s, %s, %s, NOW(), NOW())
+                        ON CONFLICT (user_id, trainer_id) 
+                        DO UPDATE SET 
+                            status = EXCLUDED.status,
+                            progress_percent = EXCLUDED.progress_percent,
+                            last_activity_at = NOW()
+                        RETURNING *
+                    ''', (user['id'], item_id, status, progress_percent))
+            
+            progress_record = dict(cur.fetchone())
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps(progress_record, default=str),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'DELETE':
+            # Reset progress
+            progress_type = body_data.get('type')
+            item_id = body_data.get('id')
+            
+            if not progress_type or not item_id:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'Missing type or id'}),
+                    'isBase64Encoded': False
+                }
+            
+            if progress_type == 'course':
+                cur.execute('''
+                    DELETE FROM t_p66738329_webapp_functionality.course_progress 
+                    WHERE user_id = %s AND course_id = %s
+                ''', (user['id'], item_id))
+            elif progress_type == 'trainer':
+                cur.execute('''
+                    DELETE FROM t_p66738329_webapp_functionality.trainer_progress 
+                    WHERE user_id = %s AND trainer_id = %s
+                ''', (user['id'], item_id))
+            else:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'Invalid type. Must be course or trainer'}),
+                    'isBase64Encoded': False
+                }
+            
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'message': 'Progress reset successfully'}),
+                'isBase64Encoded': False
+            }
+        
+        else:
+            return {
+                'statusCode': 405,
+                'headers': cors_headers,
+                'body': json.dumps({'error': 'Method not allowed'}),
+                'isBase64Encoded': False
+            }
+    
+    finally:
+        cur.close()
+        conn.close()
 
 def handle_recommendations(method, user, body_data, headers, cors_headers, event):
     if method != 'GET':
