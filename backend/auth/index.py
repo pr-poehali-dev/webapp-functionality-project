@@ -163,6 +163,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     password_check = False
                 
                 if not password_check:
+                    print("[LOGIN] Password check failed - returning 401")
                     cur.close()
                     conn.close()
                     return {
@@ -172,11 +173,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
+                print("[LOGIN] Password OK - updating last_login")
                 cur.execute('UPDATE users SET last_login = NOW() WHERE id = %s', (user_dict['id'],))
                 
                 ip_address = headers.get('x-forwarded-for', '').split(',')[0] or headers.get('x-real-ip', 'unknown')
                 user_agent = headers.get('user-agent', 'unknown')
                 
+                print("[LOGIN] Creating audit log entry")
                 cur.execute('''
                     INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id, 
                                            description, ip_address, user_agent)
@@ -184,13 +187,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 ''', (user_dict['id'], user_dict['username'], 'auth.login', 'user', user_dict['id'],
                       f"Пользователь {user_dict['username']} вошёл в систему", ip_address, user_agent))
                 
+                print("[LOGIN] Committing transaction")
                 conn.commit()
                 cur.close()
                 conn.close()
                 
+                print("[LOGIN] Creating session token")
                 session_token = create_session(user_dict['id'], ip_address, user_agent)
                 
+                print("[LOGIN] Getting user permissions")
                 permissions = get_user_permissions(user_dict['id'])
+                
+                print(f"[LOGIN] Success! Returning response with {len(permissions)} permissions")
                 
                 return {
                     'statusCode': 200,
