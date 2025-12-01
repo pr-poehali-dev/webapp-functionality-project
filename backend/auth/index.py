@@ -156,6 +156,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 password_valid = verify_password(password, user_dict['password_hash'])
+                print(f"DEBUG: Input password: '{password}'")
+                print(f"DEBUG: Stored hash: {user_dict['password_hash']}")
+                print(f"DEBUG: Test generated hash: {hash_password(password)}")
                 print(f"DEBUG: Password verification result: {password_valid}")
                 
                 if not password_valid:
