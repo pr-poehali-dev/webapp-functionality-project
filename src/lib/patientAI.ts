@@ -223,6 +223,16 @@ export class PatientAI {
 
     const lowerMessage = adminMessage.toLowerCase();
     
+    if (!this.isMessageMeaningful(adminMessage)) {
+      const response = this.getConfusedByNonsenseResponse();
+      this.conversationHistory.push({ role: 'patient', content: response });
+      return {
+        message: response,
+        mood: 'confused' as any,
+        satisfaction: 20,
+      };
+    }
+    
     this.analyzeAdminMessage(lowerMessage);
 
     let response = '';
@@ -410,6 +420,18 @@ export class PatientAI {
     return 'Извините, я не совсем понимаю... Можете объяснить проще, без медицинских терминов?';
   }
 
+  private getConfusedByNonsenseResponse(): string {
+    const responses = [
+      'Простите, я не понял... Вы что-то сказали?',
+      'Извините, я не расслышал. Можете повторить?',
+      'Что-что? Я не разобрал ваши слова...',
+      'Эм... Вы можете сформулировать это по-другому?',
+      'Я не совсем понял, что вы имеете в виду. Можете объяснить понятнее?',
+      'Извините, но я не уловил смысл. Говорите, пожалуйста, понятнее.',
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
   private getGenericResponse(): string {
     const responses = [
       'Да, я вас слушаю. А что дальше?',
@@ -446,6 +468,83 @@ export class PatientAI {
   private isTooTechnical(message: string): boolean {
     const technicalTerms = ['пульпит', 'периодонтит', 'апикальный', 'эндодонтический', 'резекция'];
     return technicalTerms.some(term => message.includes(term));
+  }
+
+  private isMessageMeaningful(message: string): boolean {
+    const trimmed = message.trim();
+    
+    if (trimmed.length < 2) return false;
+    
+    const words = trimmed.split(/\s+/);
+    if (words.length === 0) return false;
+    
+    const cyrillicPattern = /[а-яёА-ЯЁ]/;
+    const latinPattern = /[a-zA-Z]/;
+    const hasCyrillic = words.some(w => cyrillicPattern.test(w));
+    const hasLatin = words.some(w => latinPattern.test(w));
+    
+    if (!hasCyrillic && !hasLatin) return false;
+    
+    const consonantVowelRatio = this.checkConsonantVowelBalance(trimmed);
+    if (consonantVowelRatio < 0.2) return false;
+    
+    const nonsensePatterns = [
+      /^([а-яa-z])\1{3,}/i,
+      /^[аоуыэяёюиеaeiou]{5,}$/i,
+      /^[бвгджзклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]{6,}$/i,
+    ];
+    
+    if (nonsensePatterns.some(pattern => pattern.test(trimmed))) {
+      return false;
+    }
+    
+    const commonWords = [
+      'я', 'вы', 'мы', 'он', 'она', 'это', 'что', 'как', 'где', 'когда',
+      'да', 'нет', 'не', 'и', 'в', 'на', 'с', 'по', 'у', 'к',
+      'здравствуйте', 'добрый', 'день', 'понимаю', 'помогу', 'хорошо',
+      'спасибо', 'пожалуйста', 'можете', 'скажите', 'расскажите'
+    ];
+    
+    const hasCommonWord = words.some(word => 
+      commonWords.some(common => word.toLowerCase().includes(common))
+    );
+    
+    if (hasCommonWord) return true;
+    
+    if (words.every(word => word.length >= 3 && this.hasReasonableStructure(word))) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  private checkConsonantVowelBalance(text: string): number {
+    const vowels = 'аоуыэяёюиеaeiou';
+    const consonants = 'бвгджзклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz';
+    
+    let vowelCount = 0;
+    let consonantCount = 0;
+    
+    for (const char of text.toLowerCase()) {
+      if (vowels.includes(char)) vowelCount++;
+      if (consonants.includes(char)) consonantCount++;
+    }
+    
+    const total = vowelCount + consonantCount;
+    if (total === 0) return 0;
+    
+    return Math.min(vowelCount, consonantCount) / total;
+  }
+
+  private hasReasonableStructure(word: string): boolean {
+    const lower = word.toLowerCase();
+    
+    if (lower.length < 2) return true;
+    
+    const hasVowel = /[аоуыэяёюиеaeiou]/.test(lower);
+    const hasConsonant = /[бвгджзклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/.test(lower);
+    
+    return hasVowel && hasConsonant;
   }
 
   private handlesObjection(message: string): boolean {
