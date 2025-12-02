@@ -28,6 +28,7 @@ import VoiceRecorder from '@/lib/voiceRecorder';
 import SpeechAnalyzer, { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
 import PatientAI, { ConversationAnalysis } from '@/lib/patientAI';
 import { useToast } from '@/hooks/use-toast';
+import AdminSimulatorDialog from '@/components/simulator/AdminSimulatorDialog';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -64,6 +65,7 @@ export default function Index() {
   const patientAIRef = useRef<PatientAI | null>(null);
   const doctorVoiceRecorderRef = useRef<VoiceRecorder | null>(null);
   const [learningStatsKey, setLearningStatsKey] = useState(0);
+  const [simulatorDialog, setSimulatorDialog] = useState(false);
   
   // Profile state
   const [profileName, setProfileName] = useState(currentUser?.full_name || '');
@@ -638,6 +640,26 @@ export default function Index() {
               Симуляция реальных диалогов с врачами и пациентами
             </p>
             <Badge>5 сценариев</Badge>
+          </div>
+        </Card>
+
+        {/* Admin Simulator */}
+        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-pink-500/5" onClick={() => setSimulatorDialog(true)}>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Icon name="Users" size={32} className="text-white" />
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h3 className="text-xl font-semibold">Симулятор администратора</h3>
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                НОВОЕ
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Игра с реалистичными диалогами и оценкой 5 навыков
+            </p>
+            <Badge className="bg-purple-500/10 text-purple-600">7 сценариев</Badge>
           </div>
         </Card>
       </div>
@@ -1608,6 +1630,11 @@ export default function Index() {
         course={selectedCourse}
         onClose={() => setSelectedCourse(null)}
         onCompleteLesson={handleCompleteLesson}
+      />
+
+      <AdminSimulatorDialog
+        open={simulatorDialog}
+        onClose={() => setSimulatorDialog(false)}
       />
     </div>
   );
