@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { QuizQuestion, VoiceStep } from './types';
 import { mockQuizQuestions, mockVoiceSteps } from './mockData';
+import VoiceVisualizer from './VoiceVisualizer';
+import { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
 
 interface TrainerDialogsProps {
   quizDialog: boolean;
@@ -21,6 +23,7 @@ interface TrainerDialogsProps {
   currentVoiceStep: number;
   voiceResponse: string;
   isRecording: boolean;
+  voiceAnalysis: SpeechAnalysisResult | null;
   doctorScenario: string;
   setDoctorScenario: (scenario: string) => void;
   doctorMessages: Array<{ role: 'user' | 'doctor'; content: string }>;
@@ -31,6 +34,7 @@ interface TrainerDialogsProps {
   handlePrevQuizQuestion: () => void;
   handleRestartQuiz: () => void;
   handleStartRecording: () => void;
+  handleStopRecording: () => void;
   handleNextVoiceStep: () => void;
   handleSendDoctorMessage: () => void;
 }
@@ -48,6 +52,7 @@ export default function TrainerDialogs({
   currentVoiceStep,
   voiceResponse,
   isRecording,
+  voiceAnalysis,
   doctorScenario,
   setDoctorScenario,
   doctorMessages,
@@ -58,6 +63,7 @@ export default function TrainerDialogs({
   handlePrevQuizQuestion,
   handleRestartQuiz,
   handleStartRecording,
+  handleStopRecording,
   handleNextVoiceStep,
   handleSendDoctorMessage,
 }: TrainerDialogsProps) {
@@ -169,34 +175,90 @@ export default function TrainerDialogs({
               <p>{mockVoiceSteps[currentVoiceStep].prompt}</p>
             </div>
 
+            <VoiceVisualizer isRecording={isRecording} />
+
             <div className="text-center space-y-4">
               <Button
                 size="lg"
                 variant={isRecording ? 'destructive' : 'default'}
                 className="w-32 h-32 rounded-full"
-                onClick={handleStartRecording}
-                disabled={isRecording}
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
               >
                 {isRecording ? (
-                  <Icon name="Loader2" size={48} className="animate-spin" />
+                  <Icon name="Square" size={48} />
                 ) : (
                   <Icon name="Mic" size={48} />
                 )}
               </Button>
               <p className="text-sm text-muted-foreground">
-                {isRecording ? 'Запись...' : 'Нажмите на микрофон, чтобы начать'}
+                {isRecording ? 'Нажмите для остановки записи' : 'Нажмите на микрофон, чтобы начать'}
               </p>
             </div>
 
             {voiceResponse && (
-              <div className="bg-primary/10 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Ваш ответ:</h4>
-                <p>{voiceResponse}</p>
+              <div className="bg-primary/10 p-4 rounded-lg space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Ваш ответ:</h4>
+                  <p className="text-sm">{voiceResponse}</p>
+                </div>
+                
+                {voiceAnalysis && (
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Оценка:</span>
+                      <Badge variant={voiceAnalysis.confidence >= 70 ? 'default' : voiceAnalysis.confidence >= 50 ? 'secondary' : 'destructive'}>
+                        {voiceAnalysis.confidence}%
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Слов:</span>
+                        <span className="ml-2 font-medium">{voiceAnalysis.wordCount}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Темп:</span>
+                        <span className="ml-2 font-medium">{voiceAnalysis.wordsPerMinute} сл/мин</span>
+                      </div>
+                    </div>
+
+                    {voiceAnalysis.keywordsFound.length > 0 && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Ключевые фразы:</span>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {voiceAnalysis.keywordsFound.map((kw, idx) => (
+                            <Badge key={idx} variant="outline" className="text-green-600">
+                              ✓ {kw}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {voiceAnalysis.keywordsMissing.length > 0 && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Не хватает:</span>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {voiceAnalysis.keywordsMissing.map((kw, idx) => (
+                            <Badge key={idx} variant="outline" className="text-orange-600">
+                              {kw}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p className="font-medium mb-1">Рекомендации:</p>
+                      <p className="text-muted-foreground">{voiceAnalysis.feedback}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             <div className="flex justify-end">
-              <Button onClick={handleNextVoiceStep} disabled={!voiceResponse}>
+              <Button onClick={handleNextVoiceStep} disabled={!voiceResponse || !voiceAnalysis}>
                 {currentVoiceStep === mockVoiceSteps.length - 1 ? 'Завершить' : 'Следующий шаг'}
                 <Icon name="ArrowRight" size={16} className="ml-2" />
               </Button>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,9 @@ import { Course } from '@/components/dashboard/types';
 import { mockCourses, mockQuizQuestions, mockVoiceSteps, mockAchievements, mockLeaderboard } from '@/components/dashboard/mockData';
 import TrainerDialogs from '@/components/dashboard/TrainerDialogs';
 import CourseDialog from '@/components/dashboard/CourseDialog';
+import VoiceRecorder from '@/lib/voiceRecorder';
+import SpeechAnalyzer, { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -42,6 +45,11 @@ export default function Index() {
   const [currentVoiceStep, setCurrentVoiceStep] = useState(0);
   const [voiceResponse, setVoiceResponse] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceAnalysis, setVoiceAnalysis] = useState<SpeechAnalysisResult | null>(null);
+  const [recordingStartTime, setRecordingStartTime] = useState<number>(0);
+  const voiceRecorderRef = useRef<VoiceRecorder | null>(null);
+  const speechAnalyzerRef = useRef<SpeechAnalyzer>(new SpeechAnalyzer());
+  const { toast } = useToast();
   const [doctorScenario, setDoctorScenario] = useState('consultation');
   const [doctorMessages, setDoctorMessages] = useState<Array<{ role: 'user' | 'doctor', content: string }>>([]);
   const [doctorInput, setDoctorInput] = useState('');
@@ -113,12 +121,64 @@ export default function Index() {
     }
   };
 
-  const handleStartRecording = () => {
-    setIsRecording(true);
-    setTimeout(() => {
+  const handleStartRecording = async () => {
+    if (!voiceRecorderRef.current) {
+      voiceRecorderRef.current = new VoiceRecorder({
+        onTranscript: (text) => {
+          setVoiceResponse(text);
+        },
+        onError: (error) => {
+          toast({
+            title: 'Ошибка записи',
+            description: error.message,
+            variant: 'destructive',
+          });
+          setIsRecording(false);
+        },
+      });
+    }
+
+    if (!voiceRecorderRef.current.isSupported()) {
+      toast({
+        title: 'Запись не поддерживается',
+        description: 'Ваш браузер не поддерживает запись аудио',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await voiceRecorderRef.current.startRecording();
+      setIsRecording(true);
+      setRecordingStartTime(Date.now());
+      setVoiceResponse('');
+      setVoiceAnalysis(null);
+    } catch (error) {
+      toast({
+        title: 'Ошибка доступа',
+        description: 'Не удалось получить доступ к микрофону',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (voiceRecorderRef.current && isRecording) {
+      voiceRecorderRef.current.stopRecording();
       setIsRecording(false);
-      setVoiceResponse('Пример записанного ответа...');
-    }, 2000);
+
+      const duration = (Date.now() - recordingStartTime) / 1000;
+      const currentStep = mockVoiceSteps[currentVoiceStep];
+      
+      if (voiceResponse && speechAnalyzerRef.current) {
+        const analysis = speechAnalyzerRef.current.analyzeTranscript(
+          voiceResponse,
+          currentStep.expectedKeywords,
+          duration
+        );
+        setVoiceAnalysis(analysis);
+      }
+    }
   };
 
   const handleSendDoctorMessage = () => {
@@ -688,6 +748,7 @@ export default function Index() {
         currentVoiceStep={currentVoiceStep}
         voiceResponse={voiceResponse}
         isRecording={isRecording}
+        voiceAnalysis={voiceAnalysis}
         doctorScenario={doctorScenario}
         setDoctorScenario={setDoctorScenario}
         doctorMessages={doctorMessages}
@@ -698,6 +759,7 @@ export default function Index() {
         handlePrevQuizQuestion={handlePrevQuizQuestion}
         handleRestartQuiz={handleRestartQuiz}
         handleStartRecording={handleStartRecording}
+        handleStopRecording={handleStopRecording}
         handleNextVoiceStep={handleNextVoiceStep}
         handleSendDoctorMessage={handleSendDoctorMessage}
       />
