@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,6 +23,7 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
   const [newAchievements, setNewAchievements] = useState<UnlockedAchievement[]>([]);
   const [showAchievements, setShowAchievements] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<UnlockedAchievement | null>(null);
+  const [forceUpdate, setForceUpdate] = useState(0);
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
   // Показываем уведомления о новых достижениях по одному
@@ -37,17 +38,22 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
     if (simulator) {
       setCurrentChoices(simulator.getCurrentChoices());
     }
-  }, [simulator]);
+  }, [simulator, forceUpdate]);
 
   useEffect(() => {
-    dialogueEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [simulator?.getState().dialogue]);
+    if (simulator) {
+      dialogueEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [simulator, forceUpdate]);
 
   const handleStartScenario = (scenarioId: string) => {
     setSelectedScenario(scenarioId);
-    setSimulator(new AdminSimulator(scenarioId));
+    const newSimulator = new AdminSimulator(scenarioId);
+    setSimulator(newSimulator);
+    setCurrentChoices(newSimulator.getCurrentChoices());
     setShowExplanation(null);
     setNewAchievements([]);
+    setForceUpdate(0);
     achievementSystem.startScenario(scenarioId);
   };
 
@@ -63,12 +69,13 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
     simulator.makeChoice(choiceId);
     
     // Проверяем завершение сценария
-    const state = simulator.getState();
-    if (state.isCompleted && state.finalScore && selectedScenario) {
+    const newState = simulator.getState();
+    
+    if (newState.isCompleted && newState.finalScore && selectedScenario) {
       const unlocked = achievementSystem.completeScenario(
         selectedScenario,
-        state.finalScore,
-        state.parameters
+        newState.finalScore,
+        newState.parameters
       );
       
       if (unlocked.length > 0) {
@@ -76,9 +83,9 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
       }
     }
     
-    // Форсируем ре-рендер через изменение состояния
-    setCurrentChoices([...simulator.getCurrentChoices()]);
-    setSimulator({ ...simulator } as AdminSimulator);
+    // Обновляем варианты ответа и форсируем ре-рендер
+    setCurrentChoices(simulator.getCurrentChoices());
+    setForceUpdate(prev => prev + 1);
     
     if (choice.explanation) {
       setShowExplanation(choice.explanation);
@@ -98,8 +105,8 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
     onClose();
   };
 
-  const state = simulator?.getState();
-  const progress = simulator?.getProgress() || 0;
+  const state = useMemo(() => simulator?.getState(), [simulator, forceUpdate]);
+  const progress = useMemo(() => simulator?.getProgress() || 0, [simulator, forceUpdate]);
 
   const getParameterColor = (value: number, target: number) => {
     const percentage = (value / target) * 100;
