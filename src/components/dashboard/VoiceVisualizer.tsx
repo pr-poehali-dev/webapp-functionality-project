@@ -8,9 +8,9 @@ interface VoiceVisualizerProps {
 export default function VoiceVisualizer({ isRecording, stream }: VoiceVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const analyzerRef = useRef<AnalyserNode>();
-  const dataArrayRef = useRef<Uint8Array>();
-  const audioContextRef = useRef<AudioContext>();
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,21 +19,19 @@ export default function VoiceVisualizer({ isRecording, stream }: VoiceVisualizer
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    if (!isRecording || !stream) {
+    if (!stream) {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      analyzerRef.current = null;
+      dataArrayRef.current = null;
       
       ctx.fillStyle = 'rgb(0, 0, 0)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      const centerY = canvas.height / 2;
-      ctx.strokeStyle = 'hsl(210, 70%, 40%)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(canvas.width, centerY);
-      ctx.stroke();
       
       return;
     }
@@ -53,7 +51,7 @@ export default function VoiceVisualizer({ isRecording, stream }: VoiceVisualizer
     dataArrayRef.current = dataArray;
 
     const draw = () => {
-      if (!isRecording || !analyzerRef.current || !dataArrayRef.current) {
+      if (!analyzerRef.current || !dataArrayRef.current || !ctx) {
         return;
       }
 
@@ -64,11 +62,15 @@ export default function VoiceVisualizer({ isRecording, stream }: VoiceVisualizer
       ctx.fillStyle = 'rgb(0, 0, 0)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'hsl(210, 100%, 60%)';
+      ctx.lineWidth = 3;
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      gradient.addColorStop(0, 'hsl(210, 100%, 50%)');
+      gradient.addColorStop(0.5, 'hsl(180, 100%, 50%)');
+      gradient.addColorStop(1, 'hsl(210, 100%, 50%)');
+      ctx.strokeStyle = gradient;
       ctx.beginPath();
 
-      const sliceWidth = canvas.width / bufferLength;
+      const sliceWidth = (canvas.width * 1.0) / bufferLength;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
@@ -96,18 +98,24 @@ export default function VoiceVisualizer({ isRecording, stream }: VoiceVisualizer
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
+        audioContextRef.current = null;
       }
     };
-  }, [isRecording, stream]);
+  }, [stream]);
 
   return (
     <div className="relative w-full h-32 bg-black rounded-lg overflow-hidden">
       <canvas
         ref={canvasRef}
-        width={600}
+        width={800}
         height={128}
         className="w-full h-full"
       />
+      {!stream && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+        </div>
+      )}
     </div>
   );
 }

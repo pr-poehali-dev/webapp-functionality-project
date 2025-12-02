@@ -49,6 +49,7 @@ export default function Index() {
   const [isRecording, setIsRecording] = useState(false);
   const [voiceAnalysis, setVoiceAnalysis] = useState<SpeechAnalysisResult | null>(null);
   const [recordingStartTime, setRecordingStartTime] = useState<number>(0);
+  const [voiceStream, setVoiceStream] = useState<MediaStream | null>(null);
   const voiceRecorderRef = useRef<VoiceRecorder | null>(null);
   const speechAnalyzerRef = useRef<SpeechAnalyzer>(new SpeechAnalyzer());
   const { toast } = useToast();
@@ -58,6 +59,7 @@ export default function Index() {
   const [conversationAnalysis, setConversationAnalysis] = useState<ConversationAnalysis | null>(null);
   const [isDoctorRecording, setIsDoctorRecording] = useState(false);
   const [doctorRecordingStartTime, setDoctorRecordingStartTime] = useState<number>(0);
+  const [doctorVoiceStream, setDoctorVoiceStream] = useState<MediaStream | null>(null);
   const patientAIRef = useRef<PatientAI | null>(null);
   const doctorVoiceRecorderRef = useRef<VoiceRecorder | null>(null);
   const [learningStatsKey, setLearningStatsKey] = useState(0);
@@ -151,6 +153,9 @@ export default function Index() {
     }
 
     try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setVoiceStream(stream);
+      
       await voiceRecorderRef.current.startRecording();
       setIsRecording(true);
       setRecordingStartTime(Date.now());
@@ -178,6 +183,11 @@ export default function Index() {
     if (voiceRecorderRef.current && isRecording) {
       voiceRecorderRef.current.stopRecording();
       setIsRecording(false);
+      
+      if (voiceStream) {
+        voiceStream.getTracks().forEach(track => track.stop());
+        setVoiceStream(null);
+      }
 
       const duration = (Date.now() - recordingStartTime) / 1000;
       const currentStep = mockVoiceSteps[currentVoiceStep];

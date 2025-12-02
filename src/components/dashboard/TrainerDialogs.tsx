@@ -25,6 +25,7 @@ interface TrainerDialogsProps {
   voiceResponse: string;
   isRecording: boolean;
   voiceAnalysis: SpeechAnalysisResult | null;
+  voiceStream: MediaStream | null;
   doctorScenario: string;
   setDoctorScenario: (scenario: string) => void;
   doctorMessages: Array<{ role: 'admin' | 'patient'; content: string }>;
@@ -32,6 +33,7 @@ interface TrainerDialogsProps {
   setDoctorInput: (input: string) => void;
   conversationAnalysis: ConversationAnalysis | null;
   isDoctorRecording: boolean;
+  doctorVoiceStream: MediaStream | null;
   handleFinishConversation: () => void;
   handleRestartConversation: () => void;
   handleChangeScenario: (scenario: 'consultation' | 'treatment' | 'emergency' | 'objections') => void;
@@ -61,6 +63,7 @@ export default function TrainerDialogs({
   voiceResponse,
   isRecording,
   voiceAnalysis,
+  voiceStream,
   doctorScenario,
   setDoctorScenario,
   doctorMessages,
@@ -68,6 +71,7 @@ export default function TrainerDialogs({
   setDoctorInput,
   conversationAnalysis,
   isDoctorRecording,
+  doctorVoiceStream,
   handleQuizAnswer,
   handleNextQuizQuestion,
   handlePrevQuizQuestion,
@@ -190,7 +194,7 @@ export default function TrainerDialogs({
               <p>{mockVoiceSteps[currentVoiceStep].prompt}</p>
             </div>
 
-            <VoiceVisualizer isRecording={isRecording} />
+            {isRecording && <VoiceVisualizer isRecording={isRecording} stream={voiceStream || undefined} />}
 
             <div className="text-center space-y-4">
               <Button
@@ -343,7 +347,7 @@ export default function TrainerDialogs({
                   </div>
 
                   <div className="space-y-2">
-                    <VoiceVisualizer isRecording={isDoctorRecording} />
+                    {isDoctorRecording && <VoiceVisualizer isRecording={isDoctorRecording} stream={doctorVoiceStream || undefined} />}
                     
                     <div className="flex gap-2">
                       <Button
