@@ -1472,10 +1472,14 @@ export default function Index() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Icon name="GraduationCap" size={32} className="text-primary" />
+              <img 
+                src="https://cdn.poehali.dev/projects/5d628799-a66f-463d-92fd-2665c44b5a99/files/94ca50ae-e96b-4cdd-9762-1a33ba26f331.jpg" 
+                alt="Команда мечты" 
+                className="w-10 h-10 rounded-lg object-cover"
+              />
               <div>
-                <h1 className="text-lg font-bold">Платформа обучения</h1>
-                <p className="text-xs text-muted-foreground">Стоматологическая клиника</p>
+                <h1 className="text-lg font-bold">Команда мечты</h1>
+                <p className="text-xs text-muted-foreground">Платформа обучения</p>
               </div>
             </div>
             

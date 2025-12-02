@@ -35,12 +35,14 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
       <Card className="w-full max-w-md p-8 shadow-xl">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-            <Icon name="Lock" size={32} className="text-primary" />
-          </div>
+          <img 
+            src="https://cdn.poehali.dev/projects/5d628799-a66f-463d-92fd-2665c44b5a99/files/94ca50ae-e96b-4cdd-9762-1a33ba26f331.jpg" 
+            alt="Команда мечты" 
+            className="w-24 h-24 mx-auto mb-4 rounded-lg object-cover"
+          />
           <h1 className="text-3xl font-bold mb-2">Вход в систему</h1>
           <p className="text-muted-foreground">
-            Платформа обучения стоматологической клиники
+            Платформа обучения Команда мечты
           </p>
         </div>
 
