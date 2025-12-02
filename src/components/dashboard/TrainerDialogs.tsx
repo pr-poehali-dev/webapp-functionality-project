@@ -31,9 +31,12 @@ interface TrainerDialogsProps {
   doctorInput: string;
   setDoctorInput: (input: string) => void;
   conversationAnalysis: ConversationAnalysis | null;
+  isDoctorRecording: boolean;
   handleFinishConversation: () => void;
   handleRestartConversation: () => void;
-  handleChangeScenario: (scenario: 'consultation' | 'treatment' | 'emergency') => void;
+  handleChangeScenario: (scenario: 'consultation' | 'treatment' | 'emergency' | 'objections') => void;
+  handleStartDoctorRecording: () => void;
+  handleStopDoctorRecording: () => void;
   handleQuizAnswer: (questionIndex: number, answerIndex: number) => void;
   handleNextQuizQuestion: () => void;
   handlePrevQuizQuestion: () => void;
@@ -64,6 +67,7 @@ export default function TrainerDialogs({
   doctorInput,
   setDoctorInput,
   conversationAnalysis,
+  isDoctorRecording,
   handleQuizAnswer,
   handleNextQuizQuestion,
   handlePrevQuizQuestion,
@@ -75,6 +79,8 @@ export default function TrainerDialogs({
   handleFinishConversation,
   handleRestartConversation,
   handleChangeScenario,
+  handleStartDoctorRecording,
+  handleStopDoctorRecording,
 }: TrainerDialogsProps) {
   return (
     <>
@@ -289,10 +295,11 @@ export default function TrainerDialogs({
           {!conversationAnalysis ? (
             <>
               <Tabs value={doctorScenario} onValueChange={(val) => handleChangeScenario(val as any)} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="consultation">Консультация</TabsTrigger>
                   <TabsTrigger value="treatment">План лечения</TabsTrigger>
-                  <TabsTrigger value="emergency">Экстренный случай</TabsTrigger>
+                  <TabsTrigger value="emergency">Экстренный</TabsTrigger>
+                  <TabsTrigger value="objections">Возражения</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value={doctorScenario} className="space-y-4">
@@ -336,9 +343,20 @@ export default function TrainerDialogs({
                   </div>
 
                   <div className="space-y-2">
+                    <VoiceVisualizer isRecording={isDoctorRecording} />
+                    
                     <div className="flex gap-2">
+                      <Button
+                        size="icon"
+                        variant={isDoctorRecording ? 'destructive' : 'outline'}
+                        onClick={isDoctorRecording ? handleStopDoctorRecording : handleStartDoctorRecording}
+                        disabled={conversationAnalysis !== null}
+                      >
+                        <Icon name={isDoctorRecording ? 'Square' : 'Mic'} size={20} />
+                      </Button>
+                      
                       <Input
-                        placeholder="Введите ваше сообщение..."
+                        placeholder={isDoctorRecording ? 'Говорите...' : 'Или введите текст...'}
                         value={doctorInput}
                         onChange={(e) => setDoctorInput(e.target.value)}
                         onKeyDown={(e) => {
@@ -347,9 +365,9 @@ export default function TrainerDialogs({
                             handleSendDoctorMessage();
                           }
                         }}
-                        disabled={conversationAnalysis !== null}
+                        disabled={conversationAnalysis !== null || isDoctorRecording}
                       />
-                      <Button onClick={handleSendDoctorMessage} disabled={!doctorInput.trim()}>
+                      <Button onClick={handleSendDoctorMessage} disabled={!doctorInput.trim() || isDoctorRecording}>
                         <Icon name="Send" size={16} />
                       </Button>
                     </div>

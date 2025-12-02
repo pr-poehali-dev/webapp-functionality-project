@@ -1,10 +1,11 @@
 export interface PatientProfile {
-  scenario: 'consultation' | 'treatment' | 'emergency';
+  scenario: 'consultation' | 'treatment' | 'emergency' | 'objections';
   complaint: string;
   mood: 'calm' | 'nervous' | 'angry' | 'scared';
   knowledge: 'low' | 'medium' | 'high';
   symptoms: string[];
   concerns: string[];
+  objections?: string[];
 }
 
 export interface PatientResponse {
@@ -32,7 +33,7 @@ export class PatientAI {
   private askedAboutConcerns = false;
   private messageCount = 0;
 
-  constructor(scenario: 'consultation' | 'treatment' | 'emergency') {
+  constructor(scenario: 'consultation' | 'treatment' | 'emergency' | 'objections') {
     this.profile = this.createProfile(scenario);
   }
 
@@ -62,6 +63,21 @@ export class PatientAI {
         symptoms: ['кровотечение', 'сильная боль', 'отек'],
         concerns: ['что делать срочно', 'это опасно', 'нужно ли приезжать'],
       },
+      objections: {
+        scenario: 'objections',
+        complaint: 'Мне нужно поставить имплант, но это так дорого...',
+        mood: 'nervous',
+        knowledge: 'medium',
+        symptoms: ['отсутствует зуб', 'дискомфорт при жевании'],
+        concerns: ['высокая цена', 'не понимаю зачем', 'может обойтись'],
+        objections: [
+          'Это слишком дорого',
+          'А нельзя дешевле?',
+          'Зачем имплант, можно же без него',
+          'Я подумаю... может позже',
+          'У конкурентов дешевле'
+        ],
+      },
     };
 
     return profiles[scenario] || profiles.consultation;
@@ -81,6 +97,13 @@ export class PatientAI {
 
     if (this.messageCount === 1) {
       response = this.getInitialResponse();
+    } else if (this.profile.scenario === 'objections' && this.handlesObjection(lowerMessage)) {
+      response = this.getObjectionHandlingResponse(lowerMessage);
+      satisfaction = 85;
+      currentMood = 'calm';
+    } else if (this.profile.scenario === 'objections' && this.messageCount >= 2 && this.messageCount % 2 === 0) {
+      response = this.getNextObjection();
+      satisfaction = 50;
     } else if (this.containsEmpathy(lowerMessage)) {
       response = this.getEmpathyResponse();
       currentMood = this.profile.mood === 'scared' ? 'nervous' : 'calm';
@@ -137,6 +160,7 @@ export class PatientAI {
       consultation: 'Здравствуйте... У меня болит зуб уже неделю, особенно ночью. Я очень боюсь идти к стоматологу, но боль невыносимая.',
       treatment: 'Добрый день. Мне другой врач сказал, что нужно удалять зуб мудрости. Честно говоря, я в ужасе... Это правда так больно?',
       emergency: 'Алло! Помогите! У меня после удаления зуба сегодня утром не останавливается кровь! Я уже час прикладываю тампон, но все равно кровит. Что мне делать?!',
+      objections: 'Здравствуйте. Мне нужно ставить имплант, но... честно говоря, я не понимаю, зачем такие траты. Может быть, можно как-то обойтись?',
     };
     return responses[this.profile.scenario];
   }
@@ -210,6 +234,47 @@ export class PatientAI {
 
   private isRushed(message: string): boolean {
     return message.split(' ').length < 5;
+  }
+
+  private handlesObjection(message: string): boolean {
+    const objectionHandlingKeywords = [
+      'понимаю', 'выгода', 'сэкономите', 'инвестиция', 'долгосрочно',
+      'качество', 'гарантия', 'здоровье', 'важно', 'преимущества',
+      'сравните', 'разница', 'результат', 'альтернатива'
+    ];
+    return objectionHandlingKeywords.some(kw => message.includes(kw));
+  }
+
+  private getNextObjection(): string {
+    if (!this.profile.objections || this.profile.objections.length === 0) {
+      return this.getGenericResponse();
+    }
+    
+    const objectionIndex = Math.min(
+      Math.floor(this.messageCount / 2) - 1,
+      this.profile.objections.length - 1
+    );
+    
+    return this.profile.objections[objectionIndex];
+  }
+
+  private getObjectionHandlingResponse(message: string): string {
+    const responses = [
+      'Да, я понимаю ваши опасения. Спасибо, что объяснили так подробно.',
+      'Хм... Интересная точка зрения. Я подумаю над этим.',
+      'Спасибо за разъяснение! Теперь мне стало понятнее.',
+      'Да, вы правы. Я не думал об этом с такой стороны.',
+    ];
+    
+    if (message.includes('качество') || message.includes('здоровье')) {
+      return 'Да, здоровье это главное. Вы меня убедили!';
+    }
+    
+    if (message.includes('выгода') || message.includes('сэкономите')) {
+      return 'Действительно, если посмотреть в долгосрочной перспективе, это выгоднее.';
+    }
+    
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
   analyzeConversation(): ConversationAnalysis {

@@ -51,11 +51,14 @@ export default function Index() {
   const voiceRecorderRef = useRef<VoiceRecorder | null>(null);
   const speechAnalyzerRef = useRef<SpeechAnalyzer>(new SpeechAnalyzer());
   const { toast } = useToast();
-  const [doctorScenario, setDoctorScenario] = useState<'consultation' | 'treatment' | 'emergency'>('consultation');
+  const [doctorScenario, setDoctorScenario] = useState<'consultation' | 'treatment' | 'emergency' | 'objections'>('consultation');
   const [doctorMessages, setDoctorMessages] = useState<Array<{ role: 'admin' | 'patient', content: string }>>([]);
   const [doctorInput, setDoctorInput] = useState('');
   const [conversationAnalysis, setConversationAnalysis] = useState<ConversationAnalysis | null>(null);
+  const [isDoctorRecording, setIsDoctorRecording] = useState(false);
+  const [doctorRecordingStartTime, setDoctorRecordingStartTime] = useState<number>(0);
   const patientAIRef = useRef<PatientAI | null>(null);
+  const doctorVoiceRecorderRef = useRef<VoiceRecorder | null>(null);
   
   // Profile state
   const [profileName, setProfileName] = useState(currentUser?.full_name || '');
@@ -235,9 +238,70 @@ export default function Index() {
     patientAIRef.current = null;
   };
 
-  const handleChangeScenario = (newScenario: 'consultation' | 'treatment' | 'emergency') => {
+  const handleChangeScenario = (newScenario: 'consultation' | 'treatment' | 'emergency' | 'objections') => {
     setDoctorScenario(newScenario);
     handleRestartConversation();
+  };
+
+  const handleStartDoctorRecording = async () => {
+    if (!doctorVoiceRecorderRef.current) {
+      doctorVoiceRecorderRef.current = new VoiceRecorder({
+        onTranscript: (text) => {
+          setDoctorInput(text);
+        },
+        onError: (error) => {
+          console.warn('Doctor voice recording error:', error);
+        },
+      });
+    }
+
+    if (!doctorVoiceRecorderRef.current.isSupported()) {
+      toast({
+        title: 'Запись не поддерживается',
+        description: 'Ваш браузер не поддерживает запись аудио',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await doctorVoiceRecorderRef.current.startRecording();
+      setIsDoctorRecording(true);
+      setDoctorRecordingStartTime(Date.now());
+      setDoctorInput('');
+    } catch (error: any) {
+      console.error('Failed to start doctor recording:', error);
+      
+      let description = 'Не удалось получить доступ к микрофону';
+      if (error.name === 'NotAllowedError') {
+        description = 'Доступ к микрофону запрещен. Разрешите доступ в настройках браузера.';
+      } else if (error.name === 'NotFoundError') {
+        description = 'Микрофон не найден. Подключите микрофон и попробуйте снова.';
+      }
+      
+      toast({
+        title: 'Ошибка доступа к микрофону',
+        description,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleStopDoctorRecording = () => {
+    if (doctorVoiceRecorderRef.current && isDoctorRecording) {
+      doctorVoiceRecorderRef.current.stopRecording();
+      setIsDoctorRecording(false);
+
+      setTimeout(() => {
+        if (!doctorInput || doctorInput.trim().length === 0) {
+          toast({
+            title: 'Речь не распознана',
+            description: 'Попробуйте говорить громче и четче',
+            variant: 'destructive',
+          });
+        }
+      }, 500);
+    }
   };
 
   const handleSaveProfile = () => {
@@ -797,6 +861,7 @@ export default function Index() {
         doctorInput={doctorInput}
         setDoctorInput={setDoctorInput}
         conversationAnalysis={conversationAnalysis}
+        isDoctorRecording={isDoctorRecording}
         handleQuizAnswer={handleQuizAnswer}
         handleNextQuizQuestion={handleNextQuizQuestion}
         handlePrevQuizQuestion={handlePrevQuizQuestion}
@@ -808,6 +873,8 @@ export default function Index() {
         handleFinishConversation={handleFinishConversation}
         handleRestartConversation={handleRestartConversation}
         handleChangeScenario={handleChangeScenario}
+        handleStartDoctorRecording={handleStartDoctorRecording}
+        handleStopDoctorRecording={handleStopDoctorRecording}
       />
 
       <CourseDialog
