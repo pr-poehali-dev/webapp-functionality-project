@@ -36,6 +36,7 @@ export default function Index() {
   // Main state
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedCourseCategory, setSelectedCourseCategory] = useState<string | null>(null);
   
   // Trainer states
   const [quizDialog, setQuizDialog] = useState(false);
@@ -464,72 +465,132 @@ export default function Index() {
   );
 
   const renderCourses = () => {
-    const courseTypes = [
-      { id: 'doctors', title: 'Курсы для врачей', icon: 'Stethoscope', color: 'purple' },
-      { id: 'sales', title: 'Курсы по продажам', icon: 'TrendingUp', color: 'green' },
-      { id: 'admins', title: 'Курсы для администраторов', icon: 'Users', color: 'blue' }
+    const courseCategories = [
+      { id: 'onboarding', title: 'Адаптация новых сотрудников', icon: 'UserPlus', color: 'orange', description: 'Базовые знания для новичков' },
+      { id: 'doctors', title: 'Курсы для врачей', icon: 'Stethoscope', color: 'purple', description: 'Клиническая практика и технологии' },
+      { id: 'sales', title: 'Курсы по продажам', icon: 'TrendingUp', color: 'green', description: 'Техники продаж и увеличение чека' },
+      { id: 'admins', title: 'Курсы для администраторов', icon: 'Users', color: 'blue', description: 'Сервис и работа с пациентами' }
     ];
 
+    // Если выбрана категория, показываем курсы внутри неё
+    if (selectedCourseCategory) {
+      const category = courseCategories.find(c => c.id === selectedCourseCategory);
+      const typeCourses = selectedCourseCategory === 'onboarding' 
+        ? [] 
+        : mockCourses.filter(c => c.type === selectedCourseCategory);
+      
+      return (
+        <div>
+          <Button 
+            variant="ghost" 
+            className="mb-6"
+            onClick={() => setSelectedCourseCategory(null)}
+          >
+            <Icon name="ArrowLeft" size={16} className="mr-2" />
+            Назад к категориям
+          </Button>
+          
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className={`w-12 h-12 bg-${category?.color}-500/10 rounded-lg flex items-center justify-center`}>
+                <Icon name={category?.icon as any} size={24} className={`text-${category?.color}-600`} />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold">{category?.title}</h2>
+                <p className="text-muted-foreground">{category?.description}</p>
+              </div>
+            </div>
+          </div>
+
+          {selectedCourseCategory === 'onboarding' ? (
+            <Card className="p-8 text-center">
+              <Icon name="Construction" size={48} className="mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-semibold mb-2">Курсы находятся в разработке</h3>
+              <p className="text-muted-foreground">Скоро здесь появятся курсы для адаптации новых сотрудников</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {typeCourses.map((course) => {
+                const statusInfo = getStatusBadge(course.status);
+                return (
+                  <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedCourse(course)}>
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
+                        <Badge variant="outline">{course.category}</Badge>
+                      </div>
+                      
+                      <h4 className="text-lg font-semibold mb-2">{course.title}</h4>
+                      <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Прогресс</span>
+                          <span className="font-medium">{course.progress}%</span>
+                        </div>
+                        <Progress value={course.progress} />
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Icon name="Clock" size={14} />
+                          <span>{course.duration}</span>
+                        </div>
+                        <Button size="sm">
+                          {course.status === 'completed' ? 'Повторить' : course.status === 'in-progress' ? 'Продолжить' : 'Начать'}
+                          <Icon name="ArrowRight" size={14} className="ml-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Показываем категории курсов
     return (
       <div>
         <h2 className="text-3xl font-bold mb-8">Мои курсы</h2>
         
-        {courseTypes.map((type) => {
-          const typeCourses = mockCourses.filter(c => c.type === type.id);
-          if (typeCourses.length === 0) return null;
-          
-          return (
-            <div key={type.id} className="mb-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`w-10 h-10 bg-${type.color}-500/10 rounded-lg flex items-center justify-center`}>
-                  <Icon name={type.icon as any} size={20} className={`text-${type.color}-600`} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">{type.title}</h3>
-                  <p className="text-sm text-muted-foreground">{typeCourses.length} курсов</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {typeCourses.map((course) => {
-                  const statusInfo = getStatusBadge(course.status);
-                  return (
-                    <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedCourse(course)}>
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
-                          <Badge variant="outline">{course.category}</Badge>
-                        </div>
-                        
-                        <h4 className="text-lg font-semibold mb-2">{course.title}</h4>
-                        <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
-                        
-                        <div className="space-y-2 mb-4">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Прогресс</span>
-                            <span className="font-medium">{course.progress}%</span>
-                          </div>
-                          <Progress value={course.progress} />
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Icon name="Clock" size={14} />
-                            <span>{course.duration}</span>
-                          </div>
-                          <Button size="sm">
-                            {course.status === 'completed' ? 'Повторить' : course.status === 'in-progress' ? 'Продолжить' : 'Начать'}
-                            <Icon name="ArrowRight" size={14} className="ml-2" />
-                          </Button>
-                        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {courseCategories.map((category) => {
+            const coursesCount = category.id === 'onboarding' 
+              ? 0 
+              : mockCourses.filter(c => c.type === category.id).length;
+            
+            return (
+              <Card 
+                key={category.id} 
+                className="p-8 hover:shadow-lg transition-all cursor-pointer group"
+                onClick={() => setSelectedCourseCategory(category.id)}
+              >
+                <div className="flex items-start gap-6">
+                  <div className={`w-16 h-16 bg-${category.color}-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <Icon name={category.icon as any} size={32} className={`text-${category.color}-600`} />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-2">{category.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{category.description}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Icon name="BookOpen" size={16} />
+                        <span>{coursesCount} {category.id === 'onboarding' ? 'скоро' : 'курсов'}</span>
                       </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+                      
+                      <Icon name="ChevronRight" size={20} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     );
   };
