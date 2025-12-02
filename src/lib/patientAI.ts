@@ -124,10 +124,6 @@ export class PatientAI {
       response = this.getConfusedResponse();
       satisfaction = 40;
       currentMood = 'nervous';
-    } else if (this.isRushed(lowerMessage)) {
-      response = this.getRushedResponse();
-      satisfaction = 35;
-      currentMood = 'angry';
     } else {
       response = this.getGenericResponse();
       satisfaction = 50;
@@ -193,10 +189,6 @@ export class PatientAI {
     return 'Извините, я не совсем понимаю... Можете объяснить проще, без медицинских терминов?';
   }
 
-  private getRushedResponse(): string {
-    return 'Подождите, я не успеваю понять... Можно чуть медленнее?';
-  }
-
   private getGenericResponse(): string {
     const responses = [
       'Да, я вас слушаю. А что дальше?',
@@ -230,10 +222,6 @@ export class PatientAI {
   private isTooTechnical(message: string): boolean {
     const technicalTerms = ['пульпит', 'периодонтит', 'апикальный', 'эндодонтический', 'резекция'];
     return technicalTerms.some(term => message.includes(term));
-  }
-
-  private isRushed(message: string): boolean {
-    return message.split(' ').length < 5;
   }
 
   private handlesObjection(message: string): boolean {
