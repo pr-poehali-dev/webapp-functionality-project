@@ -559,6 +559,43 @@ export default function Index() {
     <div>
       <h2 className="text-3xl font-bold mb-6">Аналитика</h2>
       
+      {/* AI Recommendations */}
+      <Card className="p-6 mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <Icon name="Sparkles" size={24} className="text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              AI рекомендации на основе ваших результатов
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Icon name="TrendingUp" size={18} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Высокие результаты в продажах (92%)</p>
+                  <p className="text-sm text-muted-foreground">Вы отлично справляетесь с техниками продаж. Рекомендуем перейти к продвинутым курсам по презентации лечения.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon name="AlertCircle" size={18} className="text-orange-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Есть потенциал для улучшения (78%)</p>
+                  <p className="text-sm text-muted-foreground">Технические навыки можно усилить. Пройдите дополнительные тренажеры по работе с CRM и документацией.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon name="Target" size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Рекомендуем практику</p>
+                  <p className="text-sm text-muted-foreground">Вы прошли 3 голосовых тренажера. Продолжайте практиковать сценарии работы с возражениями для закрепления навыков.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Learning Progress */}
         <Card className="p-6">
@@ -606,6 +643,78 @@ export default function Index() {
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* Recommended Courses */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="BookMarked" size={20} />
+          Рекомендуемые курсы
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                AI рекомендация
+              </Badge>
+              <Badge variant="outline">Продажи</Badge>
+            </div>
+            <h4 className="font-semibold mb-2">Презентация лечения</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Продвинутые техники представления плана лечения пациенту
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={14} />
+              <span>5 часов</span>
+              <span>•</span>
+              <Icon name="Star" size={14} className="text-yellow-500" />
+              <span>Продвинутый</span>
+            </div>
+          </Card>
+
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                AI рекомендация
+              </Badge>
+              <Badge variant="outline">Техническое</Badge>
+            </div>
+            <h4 className="font-semibold mb-2">Работа с CRM системой</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Эффективное использование CRM для управления пациентами
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={14} />
+              <span>3 часа</span>
+              <span>•</span>
+              <Icon name="Circle" size={14} className="text-green-500" />
+              <span>Базовый</span>
+            </div>
+          </Card>
+
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('trainers')}>
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                AI рекомендация
+              </Badge>
+              <Badge variant="outline">Коммуникация</Badge>
+            </div>
+            <h4 className="font-semibold mb-2">Работа с возражениями</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Практические сценарии преодоления возражений пациентов
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={14} />
+              <span>2 часа</span>
+              <span>•</span>
+              <Icon name="Mic" size={14} className="text-green-600" />
+              <span>Тренажер</span>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Performance by Category */}
