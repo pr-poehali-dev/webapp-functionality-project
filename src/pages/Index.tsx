@@ -557,172 +557,243 @@ export default function Index() {
 
   const renderAnalytics = () => (
     <div>
-      <h2 className="text-3xl font-bold mb-6">Аналитика</h2>
+      <h2 className="text-3xl font-bold mb-8">Аналитика обучения</h2>
       
-      {/* AI Recommendations */}
-      <Card className="p-6 mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-            <Icon name="Sparkles" size={24} className="text-purple-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              AI рекомендации на основе ваших результатов
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Icon name="TrendingUp" size={18} className="text-purple-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Высокие результаты в продажах (92%)</p>
-                  <p className="text-sm text-muted-foreground">Вы отлично справляетесь с техниками продаж. Рекомендуем перейти к продвинутым курсам по презентации лечения.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Icon name="AlertCircle" size={18} className="text-orange-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Есть потенциал для улучшения (78%)</p>
-                  <p className="text-sm text-muted-foreground">Технические навыки можно усилить. Пройдите дополнительные тренажеры по работе с CRM и документацией.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Icon name="Target" size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Рекомендуем практику</p>
-                  <p className="text-sm text-muted-foreground">Вы прошли 3 голосовых тренажера. Продолжайте практиковать сценарии работы с возражениями для закрепления навыков.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Learning Progress */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Прогресс обучения</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Завершенные курсы</span>
-                <span className="font-medium">33%</span>
-              </div>
-              <Progress value={33} />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Активные курсы</span>
-                <span className="font-medium">67%</span>
-              </div>
-              <Progress value={67} />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Общий прогресс</span>
-                <span className="font-medium">58%</span>
-              </div>
-              <Progress value={58} />
-            </div>
-          </div>
-        </Card>
-
-        {/* Activity Stats */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Статистика активности</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Часов обучения</span>
-              <span className="text-2xl font-bold">24.5</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Завершено уроков</span>
-              <span className="text-2xl font-bold">12</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Средний балл тестов</span>
-              <span className="text-2xl font-bold">87%</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Recommended Courses */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="BookMarked" size={20} />
-          Рекомендуемые курсы
+      {/* Section 1: Overview Stats */}
+      <div className="mb-10">
+        <h3 className="text-xl font-bold mb-4 text-muted-foreground uppercase tracking-wide text-sm">
+          Общая статистика
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
-            <div className="flex items-start justify-between mb-3">
-              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
-                <Icon name="Sparkles" size={12} className="mr-1" />
-                AI рекомендация
-              </Badge>
-              <Badge variant="outline">Продажи</Badge>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Zap" size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Серия дней</p>
+                <p className="text-2xl font-bold">12</p>
+              </div>
             </div>
-            <h4 className="font-semibold mb-2">Презентация лечения</h4>
-            <p className="text-sm text-muted-foreground mb-3">
-              Продвинутые техники представления плана лечения пациенту
+            <p className="text-xs text-muted-foreground">
+              Вы учитесь 12 дней подряд! 🔥
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon name="Clock" size={14} />
-              <span>5 часов</span>
-              <span>•</span>
-              <Icon name="Star" size={14} className="text-yellow-500" />
-              <span>Продвинутый</span>
-            </div>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
-            <div className="flex items-start justify-between mb-3">
-              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
-                <Icon name="Sparkles" size={12} className="mr-1" />
-                AI рекомендация
-              </Badge>
-              <Badge variant="outline">Техническое</Badge>
+          <Card className="p-6 bg-gradient-to-br from-green-50/50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Target" size={20} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Выполнение цели</p>
+                <p className="text-2xl font-bold">85%</p>
+              </div>
             </div>
-            <h4 className="font-semibold mb-2">Работа с CRM системой</h4>
-            <p className="text-sm text-muted-foreground mb-3">
-              Эффективное использование CRM для управления пациентами
+            <p className="text-xs text-muted-foreground">
+              Осталось 3 урока до недельной цели
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon name="Clock" size={14} />
-              <span>3 часа</span>
-              <span>•</span>
-              <Icon name="Circle" size={14} className="text-green-500" />
-              <span>Базовый</span>
-            </div>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('trainers')}>
-            <div className="flex items-start justify-between mb-3">
-              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
-                <Icon name="Sparkles" size={12} className="mr-1" />
-                AI рекомендация
-              </Badge>
-              <Badge variant="outline">Коммуникация</Badge>
+          <Card className="p-6 bg-gradient-to-br from-purple-50/50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Brain" size={20} className="text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Рейтинг навыков</p>
+                <p className="text-2xl font-bold">4.3</p>
+              </div>
             </div>
-            <h4 className="font-semibold mb-2">Работа с возражениями</h4>
-            <p className="text-sm text-muted-foreground mb-3">
-              Практические сценарии преодоления возражений пациентов
+            <p className="text-xs text-muted-foreground">
+              AI оценка ваших компетенций
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon name="Clock" size={14} />
-              <span>2 часа</span>
-              <span>•</span>
-              <Icon name="Mic" size={14} className="text-green-600" />
-              <span>Тренажер</span>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/20 border-orange-200 dark:border-orange-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Users" size={20} className="text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Место в рейтинге</p>
+                <p className="text-2xl font-bold">#4</p>
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Вы обогнали 3 коллег за неделю
+            </p>
           </Card>
         </div>
       </div>
 
-      {/* Trainer Statistics */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="Dumbbell" size={20} />
+      {/* Section 2: Progress & Forecast */}
+      <div className="mb-10">
+        <h3 className="text-xl font-bold mb-4 text-muted-foreground uppercase tracking-wide text-sm">
+          Прогресс и прогноз
+        </h3>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Level Progress Forecast */}
+          <Card className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <Icon name="Rocket" size={18} />
+              Прогноз достижения уровня 8
+            </h4>
+            <div className="flex items-center gap-6 mb-4">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                  7
+                </div>
+                <p className="text-center text-xs text-muted-foreground mt-2">Текущий</p>
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">2150 / 2500 баллов</span>
+                  <span className="text-sm font-bold">86%</span>
+                </div>
+                <Progress value={86} className="h-3 mb-3" />
+                
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Осталось</p>
+                    <p className="text-sm font-bold">350 б</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Прогноз</p>
+                    <p className="text-sm font-bold">~3 дня</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Темп</p>
+                    <p className="text-sm font-bold">120 б/д</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+              <Icon name="Lightbulb" size={16} className="text-indigo-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Завершите 2 курса и 1 тренажер для +400 баллов и быстрого достижения уровня 8
+              </p>
+            </div>
+          </Card>
+
+          {/* Learning Progress */}
+          <Card className="p-6">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <Icon name="BookOpen" size={18} />
+              Прогресс обучения
+            </h4>
+            <div className="space-y-4 mb-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Завершенные курсы</span>
+                  <span className="font-medium">33%</span>
+                </div>
+                <Progress value={33} />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Активные курсы</span>
+                  <span className="font-medium">67%</span>
+                </div>
+                <Progress value={67} />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Общий прогресс</span>
+                  <span className="font-medium">58%</span>
+                </div>
+                <Progress value={58} />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Часов обучения</span>
+                <span className="font-bold">24.5</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Завершено уроков</span>
+                <span className="font-bold">12</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Средний балл тестов</span>
+                <span className="font-bold">87%</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Weekly Progress Chart */}
+        <Card className="p-6">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Icon name="LineChart" size={18} />
+            График прогресса по неделям
+          </h4>
+          <div className="space-y-4">
+            {[
+              { week: 'Неделя 1', points: 350, courses: 1, tests: 2, hours: 4.5 },
+              { week: 'Неделя 2', points: 520, courses: 2, tests: 3, hours: 6.2 },
+              { week: 'Неделя 3', points: 680, courses: 1, tests: 4, hours: 7.8 },
+              { week: 'Неделя 4', points: 800, courses: 3, tests: 5, hours: 8.5 },
+            ].map((weekData, index) => {
+              const maxPoints = 800;
+              const percentage = (weekData.points / maxPoints) * 100;
+              
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium min-w-[90px]">{weekData.week}</span>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Icon name="Trophy" size={14} className="text-yellow-600" />
+                          {weekData.points}
+                        </span>
+                        <span className="hidden sm:flex items-center gap-1">
+                          <Icon name="BookOpen" size={14} className="text-blue-600" />
+                          {weekData.courses}
+                        </span>
+                        <span className="hidden md:flex items-center gap-1">
+                          <Icon name="Clock" size={14} className="text-purple-600" />
+                          {weekData.hours} ч
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative h-6 bg-secondary rounded-lg overflow-hidden">
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Icon name="TrendingUp" size={16} className="text-green-600" />
+              <span className="font-medium">+128 б/неделю</span>
+            </div>
+            <Badge variant="outline" className="text-green-600">
+              <Icon name="ArrowUp" size={12} className="mr-1" />
+              +35% за месяц
+            </Badge>
+          </div>
+        </Card>
+      </div>
+
+      {/* Section 3: Trainer Performance */}
+      <div className="mb-10">
+        <h3 className="text-xl font-bold mb-4 text-muted-foreground uppercase tracking-wide text-sm">
           Статистика по тренажерам
         </h3>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Quiz Stats */}
           <Card className="p-6">
@@ -819,154 +890,16 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Personal Metrics */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="TrendingUp" size={20} />
-          Персональные метрики
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Icon name="Zap" size={20} className="text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Серия дней</p>
-                <p className="text-2xl font-bold">12</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Вы учитесь 12 дней подряд! 🔥
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-gradient-to-br from-green-50/50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <Icon name="Target" size={20} className="text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Выполнение цели</p>
-                <p className="text-2xl font-bold">85%</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Осталось 3 урока до недельной цели
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-gradient-to-br from-purple-50/50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <Icon name="Brain" size={20} className="text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Рейтинг навыков</p>
-                <p className="text-2xl font-bold">4.3</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              AI оценка ваших компетенций
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/20 border-orange-200 dark:border-orange-800">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <Icon name="Users" size={20} className="text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Место в рейтинге</p>
-                <p className="text-2xl font-bold">#4</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Вы обогнали 3 коллег за неделю
-            </p>
-          </Card>
-        </div>
-      </div>
-
-      {/* Weekly Progress Chart */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="LineChart" size={20} />
-          График прогресса по неделям
+      {/* Section 4: Activity Timeline */}
+      <div className="mb-10">
+        <h3 className="text-xl font-bold mb-4 text-muted-foreground uppercase tracking-wide text-sm">
+          История активности
         </h3>
         <Card className="p-6">
-          <div className="space-y-6">
-            {[
-              { week: 'Неделя 1', points: 350, courses: 1, tests: 2, hours: 4.5 },
-              { week: 'Неделя 2', points: 520, courses: 2, tests: 3, hours: 6.2 },
-              { week: 'Неделя 3', points: 680, courses: 1, tests: 4, hours: 7.8 },
-              { week: 'Неделя 4', points: 800, courses: 3, tests: 5, hours: 8.5 },
-            ].map((weekData, index) => {
-              const maxPoints = 800;
-              const percentage = (weekData.points / maxPoints) * 100;
-              
-              return (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium min-w-[90px]">{weekData.week}</span>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Icon name="Trophy" size={14} className="text-yellow-600" />
-                          {weekData.points} баллов
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Icon name="BookOpen" size={14} className="text-blue-600" />
-                          {weekData.courses} курсов
-                        </span>
-                        <span className="hidden sm:flex items-center gap-1">
-                          <Icon name="ClipboardCheck" size={14} className="text-green-600" />
-                          {weekData.tests} тестов
-                        </span>
-                        <span className="hidden md:flex items-center gap-1">
-                          <Icon name="Clock" size={14} className="text-purple-600" />
-                          {weekData.hours} ч
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="relative h-8 bg-secondary rounded-lg overflow-hidden">
-                    <div 
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 flex items-center justify-end pr-3"
-                      style={{ width: `${percentage}%` }}
-                    >
-                      {percentage > 20 && (
-                        <span className="text-xs font-bold text-white">{weekData.points}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="mt-6 pt-6 border-t">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <Icon name="TrendingUp" size={16} className="text-green-600" />
-                <span className="font-medium">Средний прирост: +128 баллов/неделю</span>
-              </div>
-              <Badge variant="outline" className="text-green-600">
-                <Icon name="ArrowUp" size={12} className="mr-1" />
-                +35% за месяц
-              </Badge>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Learning History */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="History" size={20} />
-          История обучения
-        </h3>
-        <Card className="p-6">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Icon name="History" size={18} />
+            Последняя активность
+          </h4>
           <div className="space-y-4">
             {[
               {
@@ -1073,212 +1006,116 @@ export default function Index() {
         </Card>
       </div>
 
-      {/* Level Progress Forecast */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="Rocket" size={20} />
-          Прогноз достижения следующего уровня
+      {/* Section 5: AI Recommendations */}
+      <div className="mb-10">
+        <h3 className="text-xl font-bold mb-4 text-muted-foreground uppercase tracking-wide text-sm">
+          AI рекомендации
         </h3>
-        <Card className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                7
-              </div>
-              <p className="text-center text-sm text-muted-foreground mt-2">Текущий уровень</p>
+        
+        <Card className="p-6 mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <Icon name="Sparkles" size={24} className="text-purple-600" />
             </div>
-            
-            <div className="flex-1 space-y-4 w-full">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold">Прогресс до уровня 8</span>
-                  <span className="text-sm font-medium">2150 / 2500 баллов</span>
-                </div>
-                <Progress value={86} className="h-3" />
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                    <Icon name="Target" size={16} className="text-indigo-600" />
-                  </div>
+            <div className="flex-1">
+              <h4 className="font-semibold mb-3">Персональные рекомендации</h4>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Icon name="TrendingUp" size={18} className="text-purple-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Осталось</p>
-                    <p className="font-semibold">350 баллов</p>
+                    <p className="text-sm font-medium">Высокие результаты в продажах (92%)</p>
+                    <p className="text-sm text-muted-foreground">Вы отлично справляетесь с техниками продаж. Рекомендуем перейти к продвинутым курсам по презентации лечения.</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Icon name="Calendar" size={16} className="text-purple-600" />
-                  </div>
+                <div className="flex items-start gap-3">
+                  <Icon name="AlertCircle" size={18} className="text-orange-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Прогноз</p>
-                    <p className="font-semibold">~3 дня</p>
+                    <p className="text-sm font-medium">Есть потенциал для улучшения (78%)</p>
+                    <p className="text-sm text-muted-foreground">Технические навыки можно усилить. Пройдите дополнительные тренажеры по работе с CRM и документацией.</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-pink-500/20 rounded-lg flex items-center justify-center">
-                    <Icon name="Zap" size={16} className="text-pink-600" />
-                  </div>
+                <div className="flex items-start gap-3">
+                  <Icon name="Target" size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Темп</p>
-                    <p className="font-semibold">120 б/день</p>
+                    <p className="text-sm font-medium">Рекомендуем практику</p>
+                    <p className="text-sm text-muted-foreground">Вы прошли 3 голосовых тренажера. Продолжайте практиковать сценарии работы с возражениями для закрепления навыков.</p>
                   </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-                <Icon name="Lightbulb" size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium mb-1">Совет от AI:</p>
-                  <p className="text-muted-foreground">
-                    Завершите 2 курса и пройдите 1 тренажер с врачом, чтобы достичь уровня 8 быстрее. 
-                    Это даст вам +400 баллов!
-                  </p>
                 </div>
               </div>
             </div>
           </div>
         </Card>
-      </div>
 
-      {/* Comparison with Colleagues */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="Users" size={20} />
-          Сравнение с коллегами
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Your Position */}
-          <Card className="p-6">
-            <h4 className="font-semibold mb-4 flex items-center gap-2">
-              <Icon name="TrendingUp" size={18} className="text-green-600" />
-              Ваша позиция в команде
-            </h4>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-yellow-50/50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center font-bold text-yellow-700">
-                    #4
-                  </div>
-                  <div>
-                    <p className="font-semibold">Вы</p>
-                    <p className="text-sm text-muted-foreground">Администратор</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-primary">2150</p>
-                  <p className="text-xs text-muted-foreground">баллов</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">До топ-3:</p>
-                <div className="space-y-2">
-                  {[
-                    { rank: 3, name: 'Елена Иванова', points: 2800, gap: 650 },
-                    { rank: 2, name: 'Мария Петрова', points: 3200, gap: 1050 },
-                    { rank: 1, name: 'Анна Смирнова', points: 3500, gap: 1350 },
-                  ].map((leader, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm p-2 bg-secondary/50 rounded">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs font-bold">
-                          {leader.rank}
-                        </span>
-                        <span>{leader.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{leader.points}</span>
-                        <Badge variant="outline" className="text-xs text-orange-600">
-                          -{leader.gap}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* Recommended Courses */}
+        <h4 className="font-semibold mb-4 flex items-center gap-2">
+          <Icon name="BookMarked" size={18} />
+          Рекомендуемые курсы
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                AI рекомендация
+              </Badge>
+              <Badge variant="outline">Продажи</Badge>
+            </div>
+            <h5 className="font-semibold mb-2">Презентация лечения</h5>
+            <p className="text-sm text-muted-foreground mb-3">
+              Продвинутые техники представления плана лечения пациенту
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={14} />
+              <span>5 часов</span>
+              <span>•</span>
+              <Icon name="Star" size={14} className="text-yellow-500" />
+              <span>Продвинутый</span>
             </div>
           </Card>
 
-          {/* Category Comparison */}
-          <Card className="p-6">
-            <h4 className="font-semibold mb-4 flex items-center gap-2">
-              <Icon name="BarChart3" size={18} className="text-blue-600" />
-              Сравнение по категориям
-            </h4>
-            <div className="space-y-4">
-              {[
-                { name: 'Продажи', yourScore: 92, avgScore: 78, color: 'blue', better: true },
-                { name: 'Сервис', yourScore: 88, avgScore: 82, color: 'green', better: true },
-                { name: 'Коммуникация', yourScore: 85, avgScore: 80, color: 'purple', better: true },
-                { name: 'Техническая часть', yourScore: 78, avgScore: 85, color: 'orange', better: false },
-              ].map((category, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{category.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Средний: {category.avgScore}%</span>
-                      <Badge variant="outline" className={`text-xs ${category.better ? 'text-green-600' : 'text-orange-600'}`}>
-                        {category.better ? '+' : ''}{category.yourScore - category.avgScore}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="relative h-6 bg-secondary rounded-lg overflow-hidden">
-                    <div 
-                      className={`absolute inset-y-0 left-0 bg-${category.color}-500/30 border-r-2 border-${category.color}-500`}
-                      style={{ width: `${category.avgScore}%` }}
-                    />
-                    <div 
-                      className={`absolute inset-y-0 left-0 bg-gradient-to-r from-${category.color}-500 to-${category.color}-600 flex items-center justify-end pr-2`}
-                      style={{ width: `${category.yourScore}%` }}
-                    >
-                      <span className="text-xs font-bold text-white">{category.yourScore}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                AI рекомендация
+              </Badge>
+              <Badge variant="outline">Техническое</Badge>
             </div>
+            <h5 className="font-semibold mb-2">Работа с CRM системой</h5>
+            <p className="text-sm text-muted-foreground mb-3">
+              Эффективное использование CRM для управления пациентами
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={14} />
+              <span>3 часа</span>
+              <span>•</span>
+              <Icon name="Circle" size={14} className="text-green-500" />
+              <span>Базовый</span>
+            </div>
+          </Card>
 
-            <div className="mt-6 pt-4 border-t">
-              <div className="flex items-center gap-2 text-sm">
-                <Icon name="Award" size={16} className="text-yellow-600" />
-                <span className="font-medium">Вы опережаете 71% коллег по общим показателям</span>
-              </div>
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('trainers')}>
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                AI рекомендация
+              </Badge>
+              <Badge variant="outline">Коммуникация</Badge>
+            </div>
+            <h5 className="font-semibold mb-2">Работа с возражениями</h5>
+            <p className="text-sm text-muted-foreground mb-3">
+              Практические сценарии преодоления возражений пациентов
+            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={14} />
+              <span>2 часа</span>
+              <span>•</span>
+              <Icon name="Mic" size={14} className="text-green-600" />
+              <span>Тренажер</span>
             </div>
           </Card>
         </div>
       </div>
-
-      {/* Performance by Category */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Результаты по категориям</h3>
-        <div className="space-y-4">
-          {[
-            { name: 'Продажи', score: 92, color: 'bg-blue-500', trend: '+5%', trendUp: true },
-            { name: 'Сервис', score: 88, color: 'bg-green-500', trend: '+2%', trendUp: true },
-            { name: 'Коммуникация', score: 85, color: 'bg-purple-500', trend: '+8%', trendUp: true },
-            { name: 'Техническая часть', score: 78, color: 'bg-orange-500', trend: '-3%', trendUp: false },
-          ].map((category, index) => (
-            <div key={index}>
-              <div className="flex justify-between text-sm mb-2">
-                <div className="flex items-center gap-2">
-                  <span>{category.name}</span>
-                  <Badge variant="outline" className={`text-xs ${category.trendUp ? 'text-green-600' : 'text-orange-600'}`}>
-                    <Icon name={category.trendUp ? 'TrendingUp' : 'TrendingDown'} size={10} className="mr-1" />
-                    {category.trend}
-                  </Badge>
-                </div>
-                <span className="font-medium">{category.score}%</span>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-2">
-                <div className={`${category.color} h-2 rounded-full transition-all`} style={{ width: `${category.score}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 
