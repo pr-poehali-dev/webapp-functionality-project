@@ -47,4 +47,7 @@ export interface LeaderboardEntry {
   points: number;
   rank: number;
   coursesCompleted: number;
+  position: string;
+  achievements: string[];
+  level: number;
 }

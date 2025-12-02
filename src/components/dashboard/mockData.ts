@@ -119,9 +119,81 @@ export const mockAchievements: Achievement[] = [
 ];
 
 export const mockLeaderboard: LeaderboardEntry[] = [
-  { id: 1, name: 'Анна Смирнова', avatar: 'АС', points: 3500, rank: 1, coursesCompleted: 8 },
-  { id: 2, name: 'Мария Петрова', avatar: 'МП', points: 3200, rank: 2, coursesCompleted: 7 },
-  { id: 3, name: 'Елена Иванова', avatar: 'ЕИ', points: 2800, rank: 3, coursesCompleted: 6 },
-  { id: 4, name: 'Ольга Васильева', avatar: 'ОВ', points: 2150, rank: 4, coursesCompleted: 5 },
-  { id: 5, name: 'Дарья Козлова', avatar: 'ДК', points: 1900, rank: 5, coursesCompleted: 4 },
+  { 
+    id: 1, 
+    name: 'Анна Смирнова', 
+    avatar: 'АС', 
+    points: 3500, 
+    rank: 1, 
+    coursesCompleted: 8,
+    position: 'Старший администратор',
+    achievements: ['Знаток продаж', 'Мастер общения', 'Отличник'],
+    level: 12
+  },
+  { 
+    id: 2, 
+    name: 'Мария Петрова', 
+    avatar: 'МП', 
+    points: 3200, 
+    rank: 2, 
+    coursesCompleted: 7,
+    position: 'Администратор',
+    achievements: ['Знаток продаж', 'Мастер общения'],
+    level: 10
+  },
+  { 
+    id: 3, 
+    name: 'Елена Иванова', 
+    avatar: 'ЕИ', 
+    points: 2800, 
+    rank: 3, 
+    coursesCompleted: 6,
+    position: 'Координатор',
+    achievements: ['Первый шаг', 'Знаток продаж'],
+    level: 9
+  },
+  { 
+    id: 4, 
+    name: 'Ольга Васильева', 
+    avatar: 'ОВ', 
+    points: 2150, 
+    rank: 4, 
+    coursesCompleted: 5,
+    position: 'Администратор',
+    achievements: ['Первый шаг'],
+    level: 7
+  },
+  { 
+    id: 5, 
+    name: 'Дарья Козлова', 
+    avatar: 'ДК', 
+    points: 1900, 
+    rank: 5, 
+    coursesCompleted: 4,
+    position: 'Стажер',
+    achievements: ['Первый шаг'],
+    level: 6
+  },
+  { 
+    id: 6, 
+    name: 'Татьяна Новикова', 
+    avatar: 'ТН', 
+    points: 1650, 
+    rank: 6, 
+    coursesCompleted: 3,
+    position: 'Администратор',
+    achievements: [],
+    level: 5
+  },
+  { 
+    id: 7, 
+    name: 'Светлана Морозова', 
+    avatar: 'СМ', 
+    points: 1400, 
+    rank: 7, 
+    coursesCompleted: 3,
+    position: 'Стажер',
+    achievements: ['Первый шаг'],
+    level: 4
+  },
 ];

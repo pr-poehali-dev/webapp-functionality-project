@@ -665,29 +665,140 @@ export default function Index() {
 
   const renderLeaderboard = () => (
     <div>
-      <h2 className="text-3xl font-bold mb-6">Таблица лидеров</h2>
-      <Card className="p-6">
-        <div className="space-y-4">
-          {mockLeaderboard.map((entry, index) => (
-            <div key={entry.id} className={`flex items-center gap-4 p-4 rounded-lg ${index === 3 ? 'bg-primary/5 border-2 border-primary' : 'bg-secondary/50'}`}>
-              <div className="text-2xl font-bold w-8">
-                {entry.rank === 1 && '🥇'}
-                {entry.rank === 2 && '🥈'}
-                {entry.rank === 3 && '🥉'}
-                {entry.rank > 3 && entry.rank}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold mb-2">Таблица лидеров</h2>
+          <p className="text-muted-foreground">Соревнуйтесь с коллегами и повышайте свой уровень</p>
+        </div>
+        <Badge variant="outline" className="text-lg px-4 py-2">
+          <Icon name="Users" size={18} className="mr-2" />
+          {mockLeaderboard.length} участников
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {mockLeaderboard.slice(0, 3).map((entry, index) => (
+          <Card 
+            key={entry.id} 
+            className={`p-6 text-center relative overflow-hidden ${
+              index === 0 ? 'border-yellow-500/50 bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-950/20 dark:to-orange-950/20' :
+              index === 1 ? 'border-gray-400/50 bg-gradient-to-br from-gray-50/50 to-slate-50/50 dark:from-gray-950/20 dark:to-slate-950/20' :
+              'border-amber-600/50 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20'
+            }`}
+          >
+            <div className="absolute top-2 right-2 text-4xl opacity-20">
+              {entry.rank === 1 && '🥇'}
+              {entry.rank === 2 && '🥈'}
+              {entry.rank === 3 && '🥉'}
+            </div>
+            
+            <div className="relative">
+              <Avatar className="w-20 h-20 mx-auto mb-3 border-4 border-background">
+                <AvatarFallback className={`text-xl font-bold ${
+                  index === 0 ? 'bg-yellow-500/20 text-yellow-700' :
+                  index === 1 ? 'bg-gray-400/20 text-gray-700' :
+                  'bg-amber-600/20 text-amber-700'
+                }`}>
+                  {entry.avatar}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="mb-2">
+                <h3 className="font-bold text-lg">{entry.name}</h3>
+                <p className="text-sm text-muted-foreground">{entry.position}</p>
               </div>
+              
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Badge variant="secondary" className="text-xs">
+                  <Icon name="Award" size={12} className="mr-1" />
+                  Уровень {entry.level}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {entry.coursesCompleted} курсов
+                </Badge>
+              </div>
+              
+              <div className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent mb-2">
+                {entry.points}
+              </div>
+              <p className="text-xs text-muted-foreground">баллов</p>
+              
+              {entry.achievements.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Достижения</p>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {entry.achievements.map((achievement, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        ✨ {achievement}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Icon name="List" size={20} />
+          Остальные участники
+        </h3>
+        <div className="space-y-3">
+          {mockLeaderboard.slice(3).map((entry, index) => (
+            <div 
+              key={entry.id} 
+              className={`flex items-center gap-4 p-4 rounded-lg transition-all hover:shadow-md ${
+                index === 0 ? 'bg-primary/5 border-2 border-primary' : 'bg-secondary/30 hover:bg-secondary/50'
+              }`}
+            >
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background border-2 font-bold text-muted-foreground">
+                {entry.rank}
+              </div>
+              
               <Avatar className="w-12 h-12">
                 <AvatarFallback className="bg-primary/10 text-primary">
                   {entry.avatar}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <h4 className="font-semibold">{entry.name}</h4>
-                <p className="text-sm text-muted-foreground">{entry.coursesCompleted} курсов завершено</p>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-semibold truncate">{entry.name}</h4>
+                  <Badge variant="secondary" className="text-xs">
+                    Lv. {entry.level}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{entry.position}</p>
               </div>
+              
+              <div className="hidden sm:flex flex-col items-center gap-1 px-4">
+                <div className="flex items-center gap-1 text-sm">
+                  <Icon name="BookOpen" size={14} className="text-muted-foreground" />
+                  <span className="font-medium">{entry.coursesCompleted}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">курсов</span>
+              </div>
+              
+              {entry.achievements.length > 0 && (
+                <div className="hidden md:flex items-center gap-1">
+                  {entry.achievements.slice(0, 2).map((achievement, idx) => (
+                    <Badge key={idx} variant="outline" className="text-xs">
+                      {achievement}
+                    </Badge>
+                  ))}
+                  {entry.achievements.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{entry.achievements.length - 2}
+                    </Badge>
+                  )}
+                </div>
+              )}
+              
               <div className="text-right">
                 <p className="text-2xl font-bold text-primary">{entry.points}</p>
-                <p className="text-sm text-muted-foreground">баллов</p>
+                <p className="text-xs text-muted-foreground">баллов</p>
               </div>
             </div>
           ))}
