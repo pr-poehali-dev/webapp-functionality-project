@@ -29,6 +29,7 @@ import SpeechAnalyzer, { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
 import PatientAI, { ConversationAnalysis } from '@/lib/patientAI';
 import { useToast } from '@/hooks/use-toast';
 import AdminSimulatorDialog from '@/components/simulator/AdminSimulatorDialog';
+import SalesBattle from '@/components/games/SalesBattle';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -66,6 +67,7 @@ export default function Index() {
   const doctorVoiceRecorderRef = useRef<VoiceRecorder | null>(null);
   const [learningStatsKey, setLearningStatsKey] = useState(0);
   const [simulatorDialog, setSimulatorDialog] = useState(false);
+  const [salesBattleDialog, setSalesBattleDialog] = useState(false);
   
   // Knowledge base states
   const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] = useState<string | null>(null);
@@ -686,6 +688,41 @@ export default function Index() {
       <p className="text-muted-foreground mb-8">Развивайте навыки через геймифицированные сценарии с системой достижений</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Sales Battle */}
+        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-green-500/30 bg-gradient-to-br from-green-500/5 to-green-500/10" onClick={() => setSalesBattleDialog(true)}>
+          <div className="text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-600 to-green-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Icon name="Zap" size={40} className="text-white" />
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h3 className="text-xl font-semibold">Битва продаж</h3>
+              <Badge variant="default" className="bg-green-600">
+                <Icon name="Sparkles" size={12} className="mr-1" />
+                НОВИНКА
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              PvP турнир между компаниями. Олимпийская система. Приз: 20 000₽
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Badge className="bg-green-600/10 text-green-700">Компания vs Компания</Badge>
+              <Badge className="bg-green-600/15 text-green-700">Турнир</Badge>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center justify-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <Icon name="Trophy" size={14} className="text-yellow-600" />
+                  <span className="text-muted-foreground">20 000₽</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Icon name="Users" size={14} className="text-blue-600" />
+                  <span className="text-muted-foreground">Командная игра</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Admin Simulator */}
         <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10" onClick={() => setSimulatorDialog(true)}>
           <div className="text-center">
@@ -2265,6 +2302,21 @@ export default function Index() {
         open={simulatorDialog}
         onClose={() => setSimulatorDialog(false)}
       />
+
+      {/* Sales Battle Dialog */}
+      {salesBattleDialog && (
+        <div className="fixed inset-0 z-50 bg-background/95 overflow-auto">
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">⚔️ Битва продаж</h2>
+              <Button variant="ghost" onClick={() => setSalesBattleDialog(false)}>
+                <Icon name="X" size={20} />
+              </Button>
+            </div>
+            <SalesBattle />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
