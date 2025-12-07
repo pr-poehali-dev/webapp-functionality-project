@@ -76,6 +76,8 @@ export default function Index() {
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [newArticleTitle, setNewArticleTitle] = useState('');
   const [newArticleContent, setNewArticleContent] = useState('');
+  const [knowledgeSearchQuery, setKnowledgeSearchQuery] = useState('');
+  const [selectedKnowledgeTag, setSelectedKnowledgeTag] = useState<string | null>(null);
   
   // Profile state
   const [profileName, setProfileName] = useState(currentUser?.full_name || '');
@@ -1580,22 +1582,28 @@ export default function Index() {
 
     const mockArticles = {
       doctors: [
-        { id: 1, title: 'Протокол первичного осмотра', category: 'Процедуры', views: 234, lastUpdated: '2024-12-05' },
-        { id: 2, title: 'Работа с медицинской картой', category: 'Документация', views: 189, lastUpdated: '2024-12-04' },
-        { id: 3, title: 'Стандарты коммуникации с пациентами', category: 'Коммуникация', views: 312, lastUpdated: '2024-12-03' },
-        { id: 4, title: 'Техники диагностики', category: 'Процедуры', views: 267, lastUpdated: '2024-12-02' },
+        { id: 1, title: 'Протокол первичного осмотра', category: 'Процедуры', views: 234, lastUpdated: '2024-12-05', tags: ['протокол', 'осмотр', 'первичный прием'] },
+        { id: 2, title: 'Работа с медицинской картой', category: 'Документация', views: 189, lastUpdated: '2024-12-04', tags: ['документация', 'карта', 'запись'] },
+        { id: 3, title: 'Стандарты коммуникации с пациентами', category: 'Коммуникация', views: 312, lastUpdated: '2024-12-03', tags: ['общение', 'пациент', 'этика'] },
+        { id: 4, title: 'Техники диагностики', category: 'Процедуры', views: 267, lastUpdated: '2024-12-02', tags: ['диагностика', 'обследование', 'методы'] },
+        { id: 13, title: 'Анамнез и сбор информации', category: 'Процедуры', views: 198, lastUpdated: '2024-11-30', tags: ['анамнез', 'сбор данных', 'история болезни'] },
+        { id: 14, title: 'Работа с лабораторными анализами', category: 'Диагностика', views: 223, lastUpdated: '2024-11-28', tags: ['анализы', 'лаборатория', 'результаты'] },
       ],
       admins: [
-        { id: 5, title: 'Регистрация нового пациента', category: 'Прием', views: 445, lastUpdated: '2024-12-05' },
-        { id: 6, title: 'Работа с электронной очередью', category: 'Технологии', views: 298, lastUpdated: '2024-12-04' },
-        { id: 7, title: 'Обработка жалоб и возражений', category: 'Конфликты', views: 367, lastUpdated: '2024-12-03' },
-        { id: 8, title: 'Оформление документов', category: 'Документация', views: 421, lastUpdated: '2024-12-01' },
+        { id: 5, title: 'Регистрация нового пациента', category: 'Прием', views: 445, lastUpdated: '2024-12-05', tags: ['регистрация', 'новый пациент', 'запись'] },
+        { id: 6, title: 'Работа с электронной очередью', category: 'Технологии', views: 298, lastUpdated: '2024-12-04', tags: ['очередь', 'система', 'запись'] },
+        { id: 7, title: 'Обработка жалоб и возражений', category: 'Конфликты', views: 367, lastUpdated: '2024-12-03', tags: ['жалобы', 'конфликт', 'решение'] },
+        { id: 8, title: 'Оформление документов', category: 'Документация', views: 421, lastUpdated: '2024-12-01', tags: ['документы', 'оформление', 'бланки'] },
+        { id: 15, title: 'Телефонный этикет', category: 'Коммуникация', views: 356, lastUpdated: '2024-11-29', tags: ['телефон', 'звонки', 'этикет'] },
+        { id: 16, title: 'Работа с кассой', category: 'Финансы', views: 289, lastUpdated: '2024-11-27', tags: ['касса', 'оплата', 'чек'] },
       ],
       generics: [
-        { id: 9, title: 'Аналоги препаратов группы НПВС', category: 'НПВС', views: 523, lastUpdated: '2024-12-05' },
-        { id: 10, title: 'Антибиотики широкого спектра', category: 'Антибиотики', views: 612, lastUpdated: '2024-12-04' },
-        { id: 11, title: 'Препараты для лечения гипертонии', category: 'Кардиология', views: 489, lastUpdated: '2024-12-03' },
-        { id: 12, title: 'Витаминные комплексы', category: 'Витамины', views: 334, lastUpdated: '2024-12-02' },
+        { id: 9, title: 'Аналоги препаратов группы НПВС', category: 'НПВС', views: 523, lastUpdated: '2024-12-05', tags: ['нпвс', 'обезболивающее', 'аналоги'] },
+        { id: 10, title: 'Антибиотики широкого спектра', category: 'Антибиотики', views: 612, lastUpdated: '2024-12-04', tags: ['антибиотики', 'инфекция', 'лечение'] },
+        { id: 11, title: 'Препараты для лечения гипертонии', category: 'Кардиология', views: 489, lastUpdated: '2024-12-03', tags: ['давление', 'гипертония', 'сердце'] },
+        { id: 12, title: 'Витаминные комплексы', category: 'Витамины', views: 334, lastUpdated: '2024-12-02', tags: ['витамины', 'бад', 'профилактика'] },
+        { id: 17, title: 'Противовирусные препараты', category: 'Противовирусные', views: 467, lastUpdated: '2024-11-30', tags: ['вирус', 'грипп', 'орви'] },
+        { id: 18, title: 'Препараты от аллергии', category: 'Аллергология', views: 391, lastUpdated: '2024-11-28', tags: ['аллергия', 'антигистамин', 'сезон'] },
       ]
     };
 
@@ -1657,7 +1665,30 @@ export default function Index() {
     // Список статей внутри категории
     if (selectedKnowledgeCategory) {
       const category = knowledgeCategories.find(c => c.id === selectedKnowledgeCategory);
-      const articles = mockArticles[selectedKnowledgeCategory as keyof typeof mockArticles] || [];
+      let articles = mockArticles[selectedKnowledgeCategory as keyof typeof mockArticles] || [];
+      
+      // Фильтрация по поисковому запросу
+      if (knowledgeSearchQuery) {
+        const query = knowledgeSearchQuery.toLowerCase();
+        articles = articles.filter(article => 
+          article.title.toLowerCase().includes(query) ||
+          article.category.toLowerCase().includes(query) ||
+          article.tags.some((tag: string) => tag.toLowerCase().includes(query))
+        );
+      }
+      
+      // Фильтрация по выбранному тегу
+      if (selectedKnowledgeTag) {
+        articles = articles.filter(article => 
+          article.tags.includes(selectedKnowledgeTag)
+        );
+      }
+      
+      // Получаем все уникальные теги из статей текущей категории
+      const allTags = Array.from(new Set(
+        (mockArticles[selectedKnowledgeCategory as keyof typeof mockArticles] || [])
+          .flatMap((article: any) => article.tags)
+      ));
       
       return (
         <div>
@@ -1685,6 +1716,77 @@ export default function Index() {
                 <Icon name="Plus" size={16} className="mr-2" />
                 Создать статью
               </Button>
+            </div>
+
+            {/* Поиск и фильтры */}
+            <div className="space-y-4">
+              <div className="relative">
+                <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={knowledgeSearchQuery}
+                  onChange={(e) => setKnowledgeSearchQuery(e.target.value)}
+                  placeholder="Поиск по статьям, категориям и тегам..."
+                  className="pl-10"
+                />
+                {knowledgeSearchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 px-2"
+                    onClick={() => setKnowledgeSearchQuery('')}
+                  >
+                    <Icon name="X" size={14} />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Теги */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground">Теги:</span>
+                <Button
+                  variant={selectedKnowledgeTag === null ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedKnowledgeTag(null)}
+                  className={selectedKnowledgeTag === null ? 'bg-brand hover:bg-brand/90' : ''}
+                >
+                  Все
+                </Button>
+                {allTags.map((tag: string) => (
+                  <Button
+                    key={tag}
+                    variant={selectedKnowledgeTag === tag ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedKnowledgeTag(tag)}
+                    className={selectedKnowledgeTag === tag ? 'bg-brand hover:bg-brand/90' : ''}
+                  >
+                    {tag}
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Результаты поиска */}
+              {(knowledgeSearchQuery || selectedKnowledgeTag) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Icon name="Filter" size={14} />
+                  <span>
+                    Найдено статей: <strong className="text-foreground">{articles.length}</strong>
+                  </span>
+                  {(knowledgeSearchQuery || selectedKnowledgeTag) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 ml-2"
+                      onClick={() => {
+                        setKnowledgeSearchQuery('');
+                        setSelectedKnowledgeTag(null);
+                      }}
+                    >
+                      <Icon name="X" size={12} className="mr-1" />
+                      Сбросить
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1730,35 +1832,80 @@ export default function Index() {
           )}
 
           {/* Список статей */}
-          <div className="grid grid-cols-1 gap-4">
-            {articles.map((article) => (
-              <Card 
-                key={article.id} 
-                className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => setSelectedArticle(article)}
+          {articles.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-semibold mb-2">Статьи не найдены</h3>
+              <p className="text-muted-foreground mb-4">
+                Попробуйте изменить запрос или сбросить фильтры
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setKnowledgeSearchQuery('');
+                  setSelectedKnowledgeTag(null);
+                }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{article.title}</h3>
-                      <Badge variant="outline">{article.category}</Badge>
+                <Icon name="RotateCcw" size={16} className="mr-2" />
+                Сбросить фильтры
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {articles.map((article: any) => {
+                // Подсветка поискового запроса
+                const highlightText = (text: string) => {
+                  if (!knowledgeSearchQuery) return text;
+                  const parts = text.split(new RegExp(`(${knowledgeSearchQuery})`, 'gi'));
+                  return parts.map((part, i) => 
+                    part.toLowerCase() === knowledgeSearchQuery.toLowerCase() 
+                      ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-900/50">{part}</mark>
+                      : part
+                  );
+                };
+                
+                return (
+                  <Card 
+                    key={article.id} 
+                    className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedArticle(article)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{highlightText(article.title)}</h3>
+                          <Badge variant="outline">{article.category}</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                          <span className="flex items-center gap-1">
+                            <Icon name="Eye" size={14} />
+                            {article.views} просмотров
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Icon name="Calendar" size={14} />
+                            {article.lastUpdated}
+                          </span>
+                        </div>
+                        {/* Теги статьи */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {article.tags.map((tag: string) => (
+                            <Badge 
+                              key={tag} 
+                              variant="secondary" 
+                              className="text-xs"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Icon name="Eye" size={14} />
-                        {article.views} просмотров
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Icon name="Calendar" size={14} />
-                        {article.lastUpdated}
-                      </span>
-                    </div>
-                  </div>
-                  <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
-                </div>
-              </Card>
-            ))}
-          </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       );
     }
