@@ -24,60 +24,60 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { generateAIResponse, type Message, type Phase } from '@/lib/ai-patient';
 import { authService } from '@/lib/auth';
+
+const API_URL = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
 
 interface Company {
   id: string;
   name: string;
   color: string;
-  logo?: string;
 }
 
 interface SalesManager {
-  id: string;
+  id: number;
   name: string;
-  companyId: string;
   avatar: string;
   level: number;
   wins: number;
   losses: number;
+  company_id: number;
 }
 
 interface Match {
-  id: string;
+  id: number;
   round: number;
-  player1: SalesManager | null;
-  player2: SalesManager | null;
-  winner: SalesManager | null;
-  score1?: number;
-  score2?: number;
-  status: 'pending' | 'in-progress' | 'completed';
+  match_order: number;
+  player1_id: number | null;
+  player2_id: number | null;
+  player1_name?: string;
+  player2_name?: string;
+  player1_avatar?: string;
+  player2_avatar?: string;
+  winner_id: number | null;
+  score1: number;
+  score2: number;
+  status: string;
 }
 
 interface Tournament {
-  id: string;
+  id: number;
   name: string;
-  companyA: Company;
-  companyB: Company;
-  prizePool: number;
-  status: 'setup' | 'in-progress' | 'completed';
+  company_a_id: number;
+  company_b_id: number;
+  company_a_name: string;
+  company_b_name: string;
+  prize_pool: number;
+  status: string;
   matches: Match[];
-  winner: SalesManager | null;
+  winner_id: number | null;
 }
 
-
-
-const mockManagers: SalesManager[] = [
-  { id: '1', name: 'Анна Петрова', companyId: '1', avatar: 'АП', level: 8, wins: 24, losses: 6 },
-  { id: '2', name: 'Игорь Смирнов', companyId: '1', avatar: 'ИС', level: 7, wins: 18, losses: 12 },
-  { id: '3', name: 'Мария Козлова', companyId: '1', avatar: 'МК', level: 9, wins: 31, losses: 4 },
-  { id: '4', name: 'Дмитрий Волков', companyId: '1', avatar: 'ДВ', level: 6, wins: 15, losses: 15 },
-  { id: '5', name: 'Елена Новикова', companyId: '2', avatar: 'ЕН', level: 8, wins: 22, losses: 8 },
-  { id: '6', name: 'Сергей Морозов', companyId: '2', avatar: 'СМ', level: 7, wins: 19, losses: 11 },
-  { id: '7', name: 'Ольга Соколова', companyId: '2', avatar: 'ОС', level: 10, wins: 35, losses: 2 },
-  { id: '8', name: 'Алексей Лебедев', companyId: '2', avatar: 'АЛ', level: 5, wins: 12, losses: 18 },
-];
+interface ChatMessage {
+  role: 'manager' | 'client';
+  content: string;
+  timestamp?: string;
+}
 
 export default function SalesBattle() {
   const { toast } = useToast();
@@ -88,24 +88,39 @@ export default function SalesBattle() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [battleTimer, setBattleTimer] = useState(300);
-  const [battlePhase, setBattlePhase] = useState<Phase>('greeting');
-  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [playerInput, setPlayerInput] = useState('');
   const [isAIThinking, setIsAIThinking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+  const [managers, setManagers] = useState<SalesManager[]>([]);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [totalScore, setTotalScore] = useState(0);
 
-  // Загрузка компаний из БД
   useEffect(() => {
     loadCompanies();
   }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  useEffect(() => {
+    if (!battleDialog || battleTimer <= 0) return;
+
+    const timer = setInterval(() => {
+      setBattleTimer(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [battleDialog, battleTimer]);
 
   const loadCompanies = async () => {
     setIsLoadingCompanies(true);
     try {
       const response = await fetch(
-        'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9?entity_type=company',
+        `${API_URL}?entity_type=company`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -114,9 +129,7 @@ export default function SalesBattle() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to load companies');
-      }
+      if (!response.ok) throw new Error('Failed to load companies');
 
       const data = await response.json();
       if (data.companies && Array.isArray(data.companies)) {
@@ -139,23 +152,29 @@ export default function SalesBattle() {
     }
   };
 
-  // Автоскролл чата
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory]);
+  const loadManagers = async (companyId: string) => {
+    try {
+      const response = await fetch(
+        `${API_URL}?entity_type=sales_manager&company_id=${companyId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-Token': authService.getSessionToken() || '',
+          },
+        }
+      );
 
-  // Таймер боя
-  useEffect(() => {
-    if (!battleDialog || battleTimer <= 0) return;
+      if (!response.ok) throw new Error('Failed to load managers');
 
-    const timer = setInterval(() => {
-      setBattleTimer(prev => Math.max(0, prev - 1));
-    }, 1000);
+      const data = await response.json();
+      return data.managers || [];
+    } catch (error) {
+      console.error('Error loading managers:', error);
+      return [];
+    }
+  };
 
-    return () => clearInterval(timer);
-  }, [battleDialog, battleTimer]);
-
-  const handleCreateTournament = () => {
+  const handleCreateTournament = async () => {
     if (!selectedCompanyA || !selectedCompanyB) {
       toast({
         title: 'Ошибка',
@@ -176,51 +195,67 @@ export default function SalesBattle() {
 
     const companyA = companies.find(c => c.id === selectedCompanyA)!;
     const companyB = companies.find(c => c.id === selectedCompanyB)!;
-    
-    const managersA = mockManagers.filter(m => m.companyId === selectedCompanyA);
-    const managersB = mockManagers.filter(m => m.companyId === selectedCompanyB);
 
-    // Создаём турнирную сетку (олимпийская система)
-    const totalPlayers = Math.max(managersA.length, managersB.length);
-    const rounds = Math.ceil(Math.log2(totalPlayers * 2));
-    
-    // Первый раунд - все менеджеры
-    const firstRoundMatches: Match[] = [];
-    const maxMatches = Math.max(managersA.length, managersB.length);
-    
-    for (let i = 0; i < maxMatches; i++) {
-      firstRoundMatches.push({
-        id: `r1-m${i}`,
-        round: 1,
-        player1: managersA[i] || null,
-        player2: managersB[i] || null,
-        winner: null,
-        status: 'pending',
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+        body: JSON.stringify({
+          entity_type: 'tournament',
+          name: `${companyA.name} VS ${companyB.name}`,
+          company_a_id: parseInt(selectedCompanyA),
+          company_b_id: parseInt(selectedCompanyB),
+          prize_pool: 20000,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create tournament');
+
+      const data = await response.json();
+      
+      await loadTournament(data.tournament_id);
+      setSetupDialog(false);
+      
+      toast({
+        title: 'Турнир создан!',
+        description: `${companyA.name} против ${companyB.name}. Призовой фонд: 20 000₽`,
+      });
+    } catch (error) {
+      console.error('Error creating tournament:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать турнир',
+        variant: 'destructive',
       });
     }
-
-    const newTournament: Tournament = {
-      id: Date.now().toString(),
-      name: `${companyA.name} VS ${companyB.name}`,
-      companyA,
-      companyB,
-      prizePool: 20000,
-      status: 'in-progress',
-      matches: firstRoundMatches,
-      winner: null,
-    };
-
-    setTournament(newTournament);
-    setSetupDialog(false);
-    
-    toast({
-      title: 'Турнир создан!',
-      description: `${companyA.name} против ${companyB.name}. Призовой фонд: 20 000₽`,
-    });
   };
 
-  const handleStartMatch = (match: Match) => {
-    if (!match.player1 || !match.player2) {
+  const loadTournament = async (tournamentId: number) => {
+    try {
+      const response = await fetch(
+        `${API_URL}?entity_type=tournament&tournament_id=${tournamentId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-Token': authService.getSessionToken() || '',
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to load tournament');
+
+      const data = await response.json();
+      setTournament(data.tournament);
+    } catch (error) {
+      console.error('Error loading tournament:', error);
+    }
+  };
+
+  const handleStartMatch = async (match: Match) => {
+    if (!match.player1_id || !match.player2_id) {
       toast({
         title: 'Ошибка',
         description: 'Не хватает участников для боя',
@@ -229,311 +264,238 @@ export default function SalesBattle() {
       return;
     }
 
-    setCurrentMatch({
-      ...match,
-      status: 'in-progress',
-      score1: 0,
-      score2: 0,
-    });
-    setBattleDialog(true);
-    setBattleTimer(300);
-    setBattlePhase('greeting');
-    setChatHistory([]);
-    setPlayerInput('');
-    
-    // Первое сообщение от ИИ
-    setTimeout(() => {
-      const aiResponse = generateAIResponse('greeting', '', []);
-      setChatHistory([{ role: 'client', content: aiResponse.response }]);
-    }, 500);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+        body: JSON.stringify({
+          entity_type: 'battle',
+          action: 'start_match',
+          match_id: match.id,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to start match');
+
+      const data = await response.json();
+      setSessionId(data.session_id);
+      setCurrentMatch(match);
+      setBattleDialog(true);
+      setBattleTimer(300);
+      setChatHistory([
+        { role: 'client', content: 'Здравствуйте! Меня зовут Мария. Я ищу стоматологическую клинику.' }
+      ]);
+      setTotalScore(0);
+    } catch (error) {
+      console.error('Error starting match:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось начать бой',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleSendMessage = () => {
-    if (!playerInput.trim() || !currentMatch) return;
+  const handleSendMessage = async () => {
+    if (!playerInput.trim() || !sessionId) return;
 
-    const newMessage: Message = { role: 'manager', content: playerInput };
-    const updatedHistory = [...chatHistory, newMessage];
-    setChatHistory(updatedHistory);
+    const newMessage: ChatMessage = { role: 'manager', content: playerInput };
+    setChatHistory(prev => [...prev, newMessage]);
     setPlayerInput('');
     setIsAIThinking(true);
 
-    // ИИ отвечает после задержки
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(battlePhase, playerInput, updatedHistory);
-      
-      // Добавляем очки игрокам
-      const player1Score = (currentMatch.score1 || 0) + aiResponse.score;
-      const player2Score = (currentMatch.score2 || 0) + Math.floor(Math.random() * 5) + 3;
-      
-      setCurrentMatch({
-        ...currentMatch,
-        score1: player1Score,
-        score2: player2Score,
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+        body: JSON.stringify({
+          entity_type: 'battle',
+          action: 'send_message',
+          session_id: sessionId,
+          message: playerInput,
+        }),
       });
 
-      setChatHistory([...updatedHistory, { role: 'client', content: aiResponse.response }]);
+      if (!response.ok) throw new Error('Failed to send message');
+
+      const data = await response.json();
+      
+      setChatHistory(prev => [...prev, { role: 'client', content: data.ai_response }]);
+      setTotalScore(data.total_score);
       setIsAIThinking(false);
-      
-      // Автоматически переходим к следующей фазе после 3 сообщений
-      const managerMessages = updatedHistory.filter(m => m.role === 'manager').length;
-      if (managerMessages >= 3) {
-        const phases: Phase[] = ['greeting', 'needs', 'presentation', 'objections', 'closing'];
-        const currentIndex = phases.indexOf(battlePhase);
-        if (currentIndex < phases.length - 1) {
-          setTimeout(() => {
-            setBattlePhase(phases[currentIndex + 1]);
-            toast({
-              title: 'Новая фаза!',
-              description: `Переход к фазе: ${phases[currentIndex + 1]}`,
-            });
-          }, 2000);
-        }
-      }
-    }, 1500);
-  };
-
-  const handleFinishMatch = (winnerId: string) => {
-    if (!currentMatch || !tournament) return;
-
-    const winner = currentMatch.player1?.id === winnerId ? currentMatch.player1 : currentMatch.player2;
-    const finalScore1 = currentMatch.score1 || 0;
-    const finalScore2 = currentMatch.score2 || 0;
-    
-    // Обновляем матч
-    const updatedMatches = tournament.matches.map(m => 
-      m.id === currentMatch.id 
-        ? { ...m, winner, status: 'completed' as const, score1: finalScore1, score2: finalScore2 }
-        : m
-    );
-
-    // Проверяем, все ли матчи текущего раунда завершены
-    const currentRound = currentMatch.round;
-    const roundMatches = updatedMatches.filter(m => m.round === currentRound);
-    const allRoundCompleted = roundMatches.every(m => m.status === 'completed');
-
-    if (allRoundCompleted) {
-      // Создаём следующий раунд
-      const winners = roundMatches.map(m => m.winner).filter(Boolean) as SalesManager[];
-      
-      if (winners.length === 1) {
-        // Финал! Есть победитель
-        setTournament({
-          ...tournament,
-          matches: updatedMatches,
-          winner: winners[0],
-          status: 'completed',
-        });
-        
-        toast({
-          title: '🏆 Победитель турнира!',
-          description: `${winners[0].name} выигрывает 20 000₽!`,
-        });
-      } else {
-        // Создаём матчи следующего раунда
-        const nextRoundMatches: Match[] = [];
-        for (let i = 0; i < winners.length; i += 2) {
-          nextRoundMatches.push({
-            id: `r${currentRound + 1}-m${i / 2}`,
-            round: currentRound + 1,
-            player1: winners[i],
-            player2: winners[i + 1] || null,
-            winner: null,
-            status: 'pending',
-          });
-        }
-        
-        setTournament({
-          ...tournament,
-          matches: [...updatedMatches, ...nextRoundMatches],
-        });
-        
-        toast({
-          title: 'Раунд завершён!',
-          description: `Следующий раунд: ${nextRoundMatches.length} ${nextRoundMatches.length === 1 ? 'финал' : 'матчей'}`,
-        });
-      }
-    } else {
-      setTournament({
-        ...tournament,
-        matches: updatedMatches,
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setIsAIThinking(false);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отправить сообщение',
+        variant: 'destructive',
       });
     }
+  };
 
-    setBattleDialog(false);
-    setCurrentMatch(null);
+  const handleFinishMatch = async () => {
+    if (!sessionId) return;
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+        body: JSON.stringify({
+          entity_type: 'battle',
+          action: 'finish_match',
+          session_id: sessionId,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to finish match');
+
+      const data = await response.json();
+      
+      setBattleDialog(false);
+      
+      if (tournament) {
+        await loadTournament(tournament.id);
+      }
+
+      toast({
+        title: data.winner === 'player' ? 'Победа!' : 'Поражение',
+        description: `Ваш счёт: ${data.player_score}. Счёт противника: ${data.opponent_score}`,
+        variant: data.winner === 'player' ? 'default' : 'destructive',
+      });
+    } catch (error) {
+      console.error('Error finishing match:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось завершить бой',
+        variant: 'destructive',
+      });
+    }
   };
 
   const renderTournamentBracket = () => {
     if (!tournament) return null;
 
-    const rounds = Array.from(new Set(tournament.matches.map(m => m.round))).sort();
-    
+    const rounds = Array.from(new Set(tournament.matches.map(m => m.round))).sort((a, b) => a - b);
+
     return (
       <div className="space-y-8">
-        {rounds.map(round => {
-          const roundMatches = tournament.matches.filter(m => m.round === round);
-          const roundName = round === rounds.length ? 'Финал' : `Раунд ${round}`;
-          
-          return (
-            <div key={round}>
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Icon name="Zap" size={20} />
-                {roundName}
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {roundMatches.map(match => (
-                  <Card key={match.id} className={`p-6 ${match.status === 'completed' ? 'opacity-60' : ''}`}>
-                    <div className="space-y-4">
-                      {/* Player 1 */}
-                      <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                        match.winner?.id === match.player1?.id ? 'bg-green-500/10 border border-green-500/30' : 'bg-card'
-                      }`}>
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback className="bg-blue-500/10 text-blue-600">
-                            {match.player1?.avatar || '?'}
-                          </AvatarFallback>
+        {rounds.map(round => (
+          <div key={round}>
+            <h3 className="text-lg font-bold mb-4">Раунд {round}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {tournament.matches
+                .filter(m => m.round === round)
+                .map(match => (
+                  <Card key={match.id} className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge variant={
+                        match.status === 'pending' ? 'outline' :
+                        match.status === 'in-progress' ? 'default' :
+                        'secondary'
+                      }>
+                        {match.status === 'pending' ? 'Ожидает' :
+                         match.status === 'in-progress' ? 'В процессе' :
+                         'Завершён'}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className={`flex items-center gap-2 p-2 rounded ${match.winner_id === match.player1_id ? 'bg-green-50' : ''}`}>
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{match.player1_avatar || '?'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <p className="font-semibold">{match.player1?.name || 'TBD'}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {match.player1 && `Lv.${match.player1.level} • ${match.player1.wins}W/${match.player1.losses}L`}
-                          </p>
+                          <p className="text-sm font-medium">{match.player1_name || 'Нет участника'}</p>
                         </div>
-                        {match.status === 'completed' && match.score1 && (
-                          <Badge variant={match.winner?.id === match.player1?.id ? 'default' : 'secondary'}>
-                            {match.score1}
-                          </Badge>
-                        )}
-                        {match.winner?.id === match.player1?.id && (
-                          <Icon name="Crown" size={20} className="text-yellow-600" />
-                        )}
+                        {match.status === 'completed' && <Badge variant="outline">{match.score1}</Badge>}
                       </div>
 
-                      {/* VS */}
-                      <div className="text-center text-sm font-bold text-muted-foreground">
-                        VS
-                      </div>
-
-                      {/* Player 2 */}
-                      <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                        match.winner?.id === match.player2?.id ? 'bg-green-500/10 border border-green-500/30' : 'bg-card'
-                      }`}>
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback className="bg-purple-500/10 text-purple-600">
-                            {match.player2?.avatar || '?'}
-                          </AvatarFallback>
+                      <div className={`flex items-center gap-2 p-2 rounded ${match.winner_id === match.player2_id ? 'bg-green-50' : ''}`}>
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{match.player2_avatar || '?'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <p className="font-semibold">{match.player2?.name || 'TBD'}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {match.player2 && `Lv.${match.player2.level} • ${match.player2.wins}W/${match.player2.losses}L`}
-                          </p>
+                          <p className="text-sm font-medium">{match.player2_name || 'Нет участника'}</p>
                         </div>
-                        {match.status === 'completed' && match.score2 && (
-                          <Badge variant={match.winner?.id === match.player2?.id ? 'default' : 'secondary'}>
-                            {match.score2}
-                          </Badge>
-                        )}
-                        {match.winner?.id === match.player2?.id && (
-                          <Icon name="Crown" size={20} className="text-yellow-600" />
-                        )}
-                      </div>
-
-                      {/* Action Button */}
-                      <div className="pt-2">
-                        {match.status === 'pending' && match.player1 && match.player2 && (
-                          <Button 
-                            className="w-full bg-brand hover:bg-brand/90"
-                            onClick={() => handleStartMatch(match)}
-                          >
-                            <Icon name="Play" size={16} className="mr-2" />
-                            Начать бой
-                          </Button>
-                        )}
-                        {match.status === 'completed' && (
-                          <div className="text-center text-sm text-muted-foreground">
-                            Победитель: <span className="font-bold text-foreground">{match.winner?.name}</span>
-                          </div>
-                        )}
+                        {match.status === 'completed' && <Badge variant="outline">{match.score2}</Badge>}
                       </div>
                     </div>
+
+                    {match.status === 'pending' && match.player1_id && match.player2_id && (
+                      <Button
+                        onClick={() => handleStartMatch(match)}
+                        className="w-full bg-brand hover:bg-brand/90"
+                        size="sm"
+                      >
+                        <Icon name="Swords" size={14} className="mr-2" />
+                        Начать бой
+                      </Button>
+                    )}
                   </Card>
                 ))}
-              </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     );
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+    <div className="container mx-auto py-8 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold mb-2">⚔️ Битва продаж</h2>
-          <p className="text-muted-foreground">
-            Корпоративный турнир между компаниями. Олимпийская система. Призовой фонд: 20 000₽
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Icon name="Swords" size={32} className="text-brand" />
+            Битва продаж
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Корпоративные турниры между менеджерами по продажам
           </p>
         </div>
-        <Button 
-          onClick={() => setSetupDialog(true)} 
-          className="bg-brand hover:bg-brand/90"
-          disabled={!!tournament && tournament.status !== 'completed'}
-        >
+        <Button onClick={() => setSetupDialog(true)} className="bg-brand hover:bg-brand/90">
           <Icon name="Plus" size={16} className="mr-2" />
           Создать турнир
         </Button>
       </div>
 
-      {/* Tournament Info */}
       {tournament && (
-        <Card className="p-6 mb-8 bg-gradient-to-r from-brand/10 to-brand/5 border-brand/30">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-500/20 rounded-lg flex items-center justify-center mb-2">
-                  <Icon name="Building2" size={32} className="text-blue-600" />
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold mb-2">{tournament.name}</h2>
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-blue-500" />
+                  <p className="font-bold">{tournament.company_a_name}</p>
                 </div>
-                <p className="font-bold">{tournament.companyA.name}</p>
-              </div>
-              
-              <div className="text-4xl font-bold text-brand">VS</div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-purple-500/20 rounded-lg flex items-center justify-center mb-2">
-                  <Icon name="Building2" size={32} className="text-purple-600" />
+                <Icon name="Swords" size={20} className="text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-purple-500" />
+                  <p className="font-bold">{tournament.company_b_name}</p>
                 </div>
-                <p className="font-bold">{tournament.companyB.name}</p>
               </div>
             </div>
 
             <div className="text-right">
               <p className="text-sm text-muted-foreground mb-1">Призовой фонд</p>
               <p className="text-3xl font-bold text-green-600">
-                {tournament.prizePool.toLocaleString('ru-RU')}₽
+                {tournament.prize_pool.toLocaleString('ru-RU')}₽
               </p>
-              {tournament.status === 'completed' && tournament.winner && (
-                <Badge className="mt-2 bg-yellow-600">
-                  <Icon name="Crown" size={12} className="mr-1" />
-                  Победитель: {tournament.winner.name}
-                </Badge>
-              )}
             </div>
           </div>
-
-          {tournament.status === 'in-progress' && (
-            <div className="flex items-center gap-2 text-sm">
-              <Icon name="Zap" size={14} className="text-brand" />
-              <span className="text-muted-foreground">Турнир в процессе</span>
-            </div>
-          )}
         </Card>
       )}
 
-      {/* Tournament Bracket */}
       {tournament ? (
         renderTournamentBracket()
       ) : (
@@ -550,7 +512,6 @@ export default function SalesBattle() {
         </Card>
       )}
 
-      {/* Setup Dialog */}
       <Dialog open={setupDialog} onOpenChange={setSetupDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -570,7 +531,7 @@ export default function SalesBattle() {
                 <SelectContent>
                   {companies.map(company => (
                     <SelectItem key={company.id} value={company.id}>
-                      {company.name} ({mockManagers.filter(m => m.companyId === company.id).length} менеджеров)
+                      {company.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -586,7 +547,7 @@ export default function SalesBattle() {
                 <SelectContent>
                   {companies.map(company => (
                     <SelectItem key={company.id} value={company.id} disabled={company.id === selectedCompanyA}>
-                      {company.name} ({mockManagers.filter(m => m.companyId === company.id).length} менеджеров)
+                      {company.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -597,189 +558,108 @@ export default function SalesBattle() {
               <div className="flex items-start gap-3">
                 <Icon name="Info" size={20} className="text-yellow-600 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold mb-1">Правила турнира</p>
-                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                    <li>Олимпийская система - проигравший выбывает</li>
-                    <li>Менеджеры с ролью "менеджер по продажам"</li>
-                    <li>Призовой фонд: 20 000₽ победителю</li>
-                    <li>Длительность боя: 5 минут</li>
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                    Правила турнира
+                  </p>
+                  <ul className="text-yellow-700 dark:text-yellow-300 space-y-1">
+                    <li>• Менеджеры соревнуются в симуляции продаж с AI-пациентом</li>
+                    <li>• Победитель определяется по набранным очкам</li>
+                    <li>• Призовой фонд: 20 000₽</li>
                   </ul>
                 </div>
               </div>
             </Card>
+          </div>
 
-            <Button 
-              onClick={handleCreateTournament} 
-              className="w-full bg-brand hover:bg-brand/90"
-              disabled={!selectedCompanyA || !selectedCompanyB}
-            >
-              <Icon name="Trophy" size={16} className="mr-2" />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSetupDialog(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleCreateTournament} className="bg-brand hover:bg-brand/90">
               Создать турнир
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Battle Dialog */}
       <Dialog open={battleDialog} onOpenChange={setBattleDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>⚔️ Битва продаж</DialogTitle>
+            <DialogTitle>Битва продаж</DialogTitle>
             <DialogDescription>
-              Олимпийская система - победитель проходит дальше
+              Проведите переговоры с клиентом и наберите максимум очков
             </DialogDescription>
           </DialogHeader>
 
-          {currentMatch && (
-            <div className="space-y-6 py-4">
-              {/* Timer & Phase */}
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-2">
-                  {Math.floor(battleTimer / 60)}:{(battleTimer % 60).toString().padStart(2, '0')}
-                </div>
-                <Badge className="bg-brand mb-2">
-                  Фаза: {battlePhase === 'greeting' ? 'Приветствие' : 
-                         battlePhase === 'needs' ? 'Выявление потребности' :
-                         battlePhase === 'presentation' ? 'Презентация' :
-                         battlePhase === 'objections' ? 'Возражения' : 'Закрытие'}
-                </Badge>
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 {battlePhase === 'greeting' ? 'Представьтесь и установите контакт' :
-                      battlePhase === 'needs' ? 'Задайте вопросы, узнайте о проблеме' :
-                      battlePhase === 'presentation' ? 'Расскажите о решении, упомяните результаты' :
-                      battlePhase === 'objections' ? 'Работайте с сомнениями: гарантии, рассрочка, отзывы' :
-                      'Предложите конкретное действие: запись, встреча'}
-                </p>
-              </div>
-
-              {/* Players */}
-              <div className="grid grid-cols-2 gap-6">
-                <Card className="p-6 bg-blue-500/5 border-blue-500/30">
-                  <div className="text-center">
-                    <Avatar className="w-20 h-20 mx-auto mb-3">
-                      <AvatarFallback className="bg-blue-500/20 text-blue-600 text-xl">
-                        {currentMatch.player1?.avatar}
-                      </AvatarFallback>
-                    </Avatar>
-                    <h3 className="font-bold text-lg mb-1">{currentMatch.player1?.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Уровень {currentMatch.player1?.level}
-                    </p>
-                    <div className="text-3xl font-bold text-blue-600 mb-2">
-                      {currentMatch.score1 || 0} 🔥
-                    </div>
-                    <Progress value={(currentMatch.score1 || 0) / 10} className="h-2" />
-                  </div>
-                </Card>
-
-                <Card className="p-6 bg-purple-500/5 border-purple-500/30">
-                  <div className="text-center">
-                    <Avatar className="w-20 h-20 mx-auto mb-3">
-                      <AvatarFallback className="bg-purple-500/20 text-purple-600 text-xl">
-                        {currentMatch.player2?.avatar}
-                      </AvatarFallback>
-                    </Avatar>
-                    <h3 className="font-bold text-lg mb-1">{currentMatch.player2?.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Уровень {currentMatch.player2?.level}
-                    </p>
-                    <div className="text-3xl font-bold text-purple-600 mb-2">
-                      {currentMatch.score2 || 0} 🔥
-                    </div>
-                    <Progress value={(currentMatch.score2 || 0) / 10} className="h-2" />
-                  </div>
-                </Card>
-              </div>
-
-              {/* Chat Dialog */}
-              <Card className="p-4">
-                <div className="mb-3">
-                  <h4 className="font-semibold mb-1 flex items-center gap-2">
-                    <Icon name="MessageCircle" size={16} />
-                    Диалог с клиентом
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Ведите переговоры с ИИ-клиентом. За качество получаете очки.
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+              <div className="flex items-center gap-4">
+                <Icon name="Timer" size={20} className="text-brand" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Время</p>
+                  <p className="text-lg font-bold">
+                    {Math.floor(battleTimer / 60)}:{(battleTimer % 60).toString().padStart(2, '0')}
                   </p>
                 </div>
-                
-                <ScrollArea className="h-64 w-full rounded-md border p-4 mb-3">
-                  {chatHistory.map((msg, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`mb-3 ${msg.role === 'manager' ? 'text-right' : 'text-left'}`}
-                    >
-                      <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
-                        msg.role === 'manager' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-muted'
-                      }`}>
-                        <p className="text-xs font-semibold mb-1 opacity-70">
-                          {msg.role === 'manager' ? currentMatch.player1?.name : 'Клиент'}
-                        </p>
-                        <p className="text-sm">{msg.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {isAIThinking && (
-                    <div className="text-left mb-3">
-                      <div className="inline-block bg-muted p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground">Клиент печатает...</p>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={chatEndRef} />
-                </ScrollArea>
-
-                <div className="flex gap-2">
-                  <Textarea
-                    value={playerInput}
-                    onChange={(e) => setPlayerInput(e.target.value)}
-                    placeholder="Напишите сообщение клиенту..."
-                    className="flex-1 min-h-[80px]"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <Button 
-                    onClick={handleSendMessage} 
-                    disabled={!playerInput.trim() || isAIThinking}
-                    className="bg-brand hover:bg-brand/90"
-                  >
-                    <Icon name="Send" size={16} />
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Finish Match */}
-              {battlePhase === 'closing' && chatHistory.length > 8 && (
-                <Card className="p-4 bg-green-500/10 border-green-500/30">
-                  <p className="text-sm text-center mb-3">
-                    Диалог завершён. Определите победителя по количеству очков:
-                  </p>
-                  <div className="flex gap-4">
-                    <Button 
-                      onClick={() => handleFinishMatch(currentMatch.player1!.id)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Icon name="Crown" size={16} className="mr-2" />
-                      {currentMatch.player1?.name} ({currentMatch.score1})
-                    </Button>
-                    <Button 
-                      onClick={() => handleFinishMatch(currentMatch.player2!.id)}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                    >
-                      <Icon name="Crown" size={16} className="mr-2" />
-                      {currentMatch.player2?.name} ({currentMatch.score2})
-                    </Button>
-                  </div>
-                </Card>
-              )}
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Ваш счёт</p>
+                <p className="text-lg font-bold text-green-600">{totalScore}</p>
+              </div>
             </div>
-          )}
+
+            <ScrollArea className="h-[400px] border rounded-lg p-4">
+              <div className="space-y-4">
+                {chatHistory.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex gap-2 ${msg.role === 'manager' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[70%] p-3 rounded-lg ${
+                        msg.role === 'manager'
+                          ? 'bg-brand text-white'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      <p className="text-sm">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {isAIThinking && (
+                  <div className="flex gap-2 justify-start">
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Печатает...</p>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Введите ваш ответ клиенту..."
+                value={playerInput}
+                onChange={(e) => setPlayerInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                rows={3}
+              />
+              <div className="flex flex-col gap-2">
+                <Button onClick={handleSendMessage} disabled={!playerInput.trim() || isAIThinking}>
+                  <Icon name="Send" size={16} />
+                </Button>
+                <Button variant="destructive" onClick={handleFinishMatch}>
+                  <Icon name="Flag" size={16} />
+                </Button>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

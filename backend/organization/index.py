@@ -114,6 +114,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return handle_recommendations(method, user, body_data, headers, cors_headers, event)
         elif entity_type == 'progress':
             return handle_progress(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'sales_manager':
+            return handle_sales_managers(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'tournament':
+            return handle_tournament(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'battle':
+            return handle_battle(method, user, body_data, headers, cors_headers, event)
         else:
             return {
                 'statusCode': 400,
@@ -1081,3 +1087,361 @@ def handle_trainers(method, user, body_data, headers, cors_headers, event):
         cur.close()
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'trainer': trainer}, default=str), 'isBase64Encoded': False}
+
+def handle_sales_managers(method, user, body_data, headers, cors_headers, event):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        if method == 'GET':
+            query_params = event.get('queryStringParameters', {}) or {}
+            company_id = query_params.get('company_id')
+            
+            if company_id:
+                cur.execute('''
+                    SELECT sm.*, u.username as name, u.email
+                    FROM sales_managers sm
+                    INNER JOIN users u ON u.id = sm.user_id
+                    WHERE sm.company_id = %s AND sm.status = 'active'
+                    ORDER BY sm.level DESC, sm.wins DESC
+                ''', (company_id,))
+            else:
+                cur.execute('''
+                    SELECT sm.*, u.username as name, u.email, c.name as company_name
+                    FROM sales_managers sm
+                    INNER JOIN users u ON u.id = sm.user_id
+                    INNER JOIN companies c ON c.id = sm.company_id
+                    WHERE sm.status = 'active'
+                    ORDER BY sm.level DESC, sm.wins DESC
+                ''')
+            
+            managers = [dict(row) for row in cur.fetchall()]
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'managers': managers}, default=str),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'POST':
+            user_id = body_data.get('user_id')
+            company_id = body_data.get('company_id')
+            avatar = body_data.get('avatar', 'SM')
+            
+            if not user_id or not company_id:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'user_id and company_id required'}),
+                    'isBase64Encoded': False
+                }
+            
+            cur.execute('''
+                INSERT INTO sales_managers (user_id, company_id, avatar, level, wins, losses, status)
+                VALUES (%s, %s, %s, 1, 0, 0, 'active')
+                RETURNING id
+            ''', (user_id, company_id, avatar))
+            
+            manager_id = cur.fetchone()['id']
+            conn.commit()
+            
+            return {
+                'statusCode': 201,
+                'headers': cors_headers,
+                'body': json.dumps({'manager_id': manager_id}),
+                'isBase64Encoded': False
+            }
+    finally:
+        cur.close()
+        conn.close()
+
+def handle_tournament(method, user, body_data, headers, cors_headers, event):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        if method == 'GET':
+            query_params = event.get('queryStringParameters', {}) or {}
+            tournament_id = query_params.get('tournament_id')
+            
+            if not tournament_id:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'tournament_id required'}),
+                    'isBase64Encoded': False
+                }
+            
+            cur.execute('''
+                SELECT t.*, 
+                       ca.name as company_a_name, 
+                       cb.name as company_b_name
+                FROM tournaments t
+                INNER JOIN companies ca ON ca.id = t.company_a_id
+                INNER JOIN companies cb ON cb.id = t.company_b_id
+                WHERE t.id = %s
+            ''', (tournament_id,))
+            
+            tournament = cur.fetchone()
+            
+            if not tournament:
+                return {
+                    'statusCode': 404,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'Tournament not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            cur.execute('''
+                SELECT tm.*,
+                       u1.username as player1_name, sm1.avatar as player1_avatar,
+                       u2.username as player2_name, sm2.avatar as player2_avatar
+                FROM tournament_matches tm
+                LEFT JOIN sales_managers sm1 ON sm1.id = tm.player1_id
+                LEFT JOIN users u1 ON u1.id = sm1.user_id
+                LEFT JOIN sales_managers sm2 ON sm2.id = tm.player2_id
+                LEFT JOIN users u2 ON u2.id = sm2.user_id
+                WHERE tm.tournament_id = %s
+                ORDER BY tm.round, tm.match_order
+            ''', (tournament_id,))
+            
+            matches = [dict(row) for row in cur.fetchall()]
+            
+            tournament_dict = dict(tournament)
+            tournament_dict['matches'] = matches
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'tournament': tournament_dict}, default=str),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'POST':
+            company_a_id = body_data.get('company_a_id')
+            company_b_id = body_data.get('company_b_id')
+            name = body_data.get('name')
+            prize_pool = body_data.get('prize_pool', 20000)
+            
+            if not company_a_id or not company_b_id or not name:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'error': 'company_a_id, company_b_id, name required'}),
+                    'isBase64Encoded': False
+                }
+            
+            cur.execute('''
+                INSERT INTO tournaments (name, company_a_id, company_b_id, prize_pool, status, started_at)
+                VALUES (%s, %s, %s, %s, 'in-progress', NOW())
+                RETURNING id
+            ''', (name, company_a_id, company_b_id, prize_pool))
+            
+            tournament_id = cur.fetchone()['id']
+            
+            cur.execute('''
+                SELECT sm.id FROM sales_managers sm
+                WHERE sm.company_id = %s AND sm.status = 'active'
+                ORDER BY sm.level DESC
+            ''', (company_a_id,))
+            managers_a = [row['id'] for row in cur.fetchall()]
+            
+            cur.execute('''
+                SELECT sm.id FROM sales_managers sm
+                WHERE sm.company_id = %s AND sm.status = 'active'
+                ORDER BY sm.level DESC
+            ''', (company_b_id,))
+            managers_b = [row['id'] for row in cur.fetchall()]
+            
+            max_matches = max(len(managers_a), len(managers_b))
+            
+            for i in range(max_matches):
+                player1_id = managers_a[i] if i < len(managers_a) else None
+                player2_id = managers_b[i] if i < len(managers_b) else None
+                
+                cur.execute('''
+                    INSERT INTO tournament_matches 
+                    (tournament_id, round, match_order, player1_id, player2_id, status)
+                    VALUES (%s, 1, %s, %s, %s, 'pending')
+                ''', (tournament_id, i, player1_id, player2_id))
+            
+            conn.commit()
+            
+            return {
+                'statusCode': 201,
+                'headers': cors_headers,
+                'body': json.dumps({'tournament_id': tournament_id}),
+                'isBase64Encoded': False
+            }
+    finally:
+        cur.close()
+        conn.close()
+
+def handle_battle(method, user, body_data, headers, cors_headers, event):
+    import random
+    from datetime import datetime
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        action = body_data.get('action') if method == 'POST' else event.get('queryStringParameters', {}).get('action')
+        
+        if action == 'start_match':
+            match_id = body_data.get('match_id')
+            
+            cur.execute('''
+                SELECT tm.*, sm1.user_id as p1_uid, sm2.user_id as p2_uid
+                FROM tournament_matches tm
+                LEFT JOIN sales_managers sm1 ON sm1.id = tm.player1_id
+                LEFT JOIN sales_managers sm2 ON sm2.id = tm.player2_id
+                WHERE tm.id = %s
+            ''', (match_id,))
+            
+            match = cur.fetchone()
+            if not match:
+                return {'statusCode': 404, 'headers': cors_headers, 'body': json.dumps({'error': 'Match not found'}), 'isBase64Encoded': False}
+            
+            if user['id'] not in [match['p1_uid'], match['p2_uid']]:
+                return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Not a participant'}), 'isBase64Encoded': False}
+            
+            manager_id = match['player1_id'] if user['id'] == match['p1_uid'] else match['player2_id']
+            
+            cur.execute('UPDATE tournament_matches SET status = %s, started_at = NOW() WHERE id = %s', ('in-progress', match_id))
+            
+            cur.execute('''
+                INSERT INTO battle_sessions 
+                (match_id, manager_id, current_phase, chat_history, phase_scores, timer_remaining, status)
+                VALUES (%s, %s, 'greeting', %s, %s, 300, 'active')
+                RETURNING id
+            ''', (match_id, manager_id, json.dumps([]), json.dumps({})))
+            
+            session_id = cur.fetchone()['id']
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'session_id': session_id}),
+                'isBase64Encoded': False
+            }
+        
+        elif action == 'send_message':
+            session_id = body_data.get('session_id')
+            message = body_data.get('message')
+            
+            cur.execute('''
+                SELECT bs.*, sm.user_id
+                FROM battle_sessions bs
+                INNER JOIN sales_managers sm ON sm.id = bs.manager_id
+                WHERE bs.id = %s
+            ''', (session_id,))
+            
+            session = cur.fetchone()
+            if not session or session['user_id'] != user['id']:
+                return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Access denied'}), 'isBase64Encoded': False}
+            
+            chat_history = session['chat_history'] or []
+            chat_history.append({'role': 'manager', 'content': message, 'timestamp': datetime.now().isoformat()})
+            
+            ai_response_text = random.choice(['Звучит интересно!', 'Расскажите подробнее', 'А какова стоимость?'])
+            score = random.randint(10, 20)
+            
+            chat_history.append({'role': 'client', 'content': ai_response_text, 'timestamp': datetime.now().isoformat()})
+            
+            phase_scores = session['phase_scores'] or {}
+            phase_scores[session['current_phase']] = score
+            total_score = sum(phase_scores.values())
+            
+            cur.execute('''
+                UPDATE battle_sessions
+                SET chat_history = %s, phase_scores = %s, total_score = %s, updated_at = NOW()
+                WHERE id = %s
+            ''', (json.dumps(chat_history), json.dumps(phase_scores), total_score, session_id))
+            
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'ai_response': ai_response_text, 'score': score, 'total_score': total_score}),
+                'isBase64Encoded': False
+            }
+        
+        elif action == 'finish_match':
+            session_id = body_data.get('session_id')
+            
+            cur.execute('''
+                SELECT bs.*, sm.user_id, tm.player1_id, tm.player2_id
+                FROM battle_sessions bs
+                INNER JOIN sales_managers sm ON sm.id = bs.manager_id
+                INNER JOIN tournament_matches tm ON tm.id = bs.match_id
+                WHERE bs.id = %s
+            ''', (session_id,))
+            
+            session = cur.fetchone()
+            if not session or session['user_id'] != user['id']:
+                return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Access denied'}), 'isBase64Encoded': False}
+            
+            cur.execute('UPDATE battle_sessions SET status = %s WHERE id = %s', ('completed', session_id))
+            
+            opponent_score = random.randint(40, 80)
+            player_score = session['total_score']
+            is_player1 = (session['manager_id'] == session['player1_id'])
+            
+            score1 = player_score if is_player1 else opponent_score
+            score2 = opponent_score if is_player1 else player_score
+            winner_id = session['player1_id'] if score1 > score2 else session['player2_id']
+            
+            cur.execute('''
+                UPDATE tournament_matches
+                SET score1 = %s, score2 = %s, winner_id = %s, status = 'completed', completed_at = NOW()
+                WHERE id = %s
+            ''', (score1, score2, winner_id, session['match_id']))
+            
+            if player_score > opponent_score:
+                cur.execute('UPDATE sales_managers SET wins = wins + 1, total_score = total_score + %s WHERE id = %s', (player_score, session['manager_id']))
+            else:
+                cur.execute('UPDATE sales_managers SET losses = losses + 1, total_score = total_score + %s WHERE id = %s', (player_score, session['manager_id']))
+            
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'player_score': player_score, 'opponent_score': opponent_score, 'winner': 'player' if player_score > opponent_score else 'opponent'}),
+                'isBase64Encoded': False
+            }
+        
+        elif action == 'get_session':
+            query_params = event.get('queryStringParameters', {}) or {}
+            session_id = query_params.get('session_id')
+            
+            cur.execute('''
+                SELECT bs.*, sm.user_id
+                FROM battle_sessions bs
+                INNER JOIN sales_managers sm ON sm.id = bs.manager_id
+                WHERE bs.id = %s
+            ''', (session_id,))
+            
+            session = cur.fetchone()
+            if not session or session['user_id'] != user['id']:
+                return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Access denied'}), 'isBase64Encoded': False}
+            
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'session': dict(session)}, default=str),
+                'isBase64Encoded': False
+            }
+        
+        return {
+            'statusCode': 400,
+            'headers': cors_headers,
+            'body': json.dumps({'error': 'Invalid action'}),
+            'isBase64Encoded': False
+        }
+    finally:
+        cur.close()
+        conn.close()
